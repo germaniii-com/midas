@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Input, Select, SelectItem, Spinner } from '@heroui/react';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { getAccount, updateAccount, deleteAccount } from '../../../api/accounts';
+import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 
 const accountTypes = [
   { value: 'checking', label: 'Checking' },
@@ -23,6 +24,7 @@ export default function EditAccountPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     if (!id || !accountId) return;
@@ -132,14 +134,23 @@ export default function EditAccountPage() {
           <Button
             color="danger"
             variant="flat"
-            onPress={handleDelete}
-            isLoading={deleting}
+            onPress={() => setDeleteModalOpen(true)}
             startContent={<TrashIcon width={18} />}
           >
             Delete
           </Button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        isLoading={deleting}
+        title="Delete Account"
+      >
+        <p>Are you sure you want to delete <strong>{name}</strong>? This action cannot be undone.</p>
+      </DeleteConfirmModal>
     </div>
   );
 }

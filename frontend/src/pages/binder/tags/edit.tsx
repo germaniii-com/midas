@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Input, Spinner } from '@heroui/react';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { getTag, updateTag, deleteTag } from '../../../api/tags';
+import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 
 export default function EditTagPage() {
   const { id, tagId } = useParams<{ id: string; tagId: string }>();
@@ -13,6 +14,7 @@ export default function EditTagPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     if (!id || !tagId) return;
@@ -122,14 +124,23 @@ export default function EditTagPage() {
           <Button
             color="danger"
             variant="flat"
-            onPress={handleDelete}
-            isLoading={deleting}
+            onPress={() => setDeleteModalOpen(true)}
             startContent={<TrashIcon width={18} />}
           >
             Delete
           </Button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        isLoading={deleting}
+        title="Delete Tag"
+      >
+        <p>Are you sure you want to delete <strong>{name}</strong>? This action cannot be undone.</p>
+      </DeleteConfirmModal>
     </div>
   );
 }

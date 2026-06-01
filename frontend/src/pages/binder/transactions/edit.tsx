@@ -13,6 +13,7 @@ import {
   ModalFooter,
 } from '@heroui/react';
 import { ArrowLeftIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 import { getAccounts, type Account } from '../../../api/accounts';
 import { getPayees, createPayee, type Payee } from '../../../api/payees';
 import { getTags, createTag, type Tag } from '../../../api/tags';
@@ -43,6 +44,7 @@ export default function EditTransactionPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const [payeeModalOpen, setPayeeModalOpen] = useState(false);
   const [newPayeeName, setNewPayeeName] = useState('');
@@ -350,14 +352,23 @@ export default function EditTransactionPage() {
           <Button
             color="danger"
             variant="flat"
-            onPress={handleDelete}
-            isLoading={deleting}
+            onPress={() => setDeleteModalOpen(true)}
             startContent={<TrashIcon width={18} />}
           >
             Delete
           </Button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        isLoading={deleting}
+        title="Delete Transaction"
+      >
+        <p>Are you sure you want to delete this transaction? This action cannot be undone.</p>
+      </DeleteConfirmModal>
 
       {/* Create Payee Modal */}
       <Modal isOpen={payeeModalOpen} onClose={() => setPayeeModalOpen(false)} placement="center">
