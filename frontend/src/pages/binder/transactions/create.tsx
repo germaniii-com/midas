@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Button,
   Input,
@@ -20,6 +20,7 @@ import { createTransaction } from '../../../api/transactions';
 export default function CreateTransactionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
@@ -48,12 +49,16 @@ export default function CreateTransactionPage() {
 
   useEffect(() => {
     if (!id) return;
+    const preselected = searchParams.get('accountId');
     Promise.all([
       getAccounts(id),
       getPayees(id),
       getTags(id),
     ]).then(([a, p, t]) => {
       setAccounts(a);
+      if (preselected && a.some((acct) => acct.id === preselected)) {
+        setAccountId(preselected);
+      }
       setPayees(p);
       setTags(t);
     }).catch(() => {});
@@ -111,7 +116,12 @@ export default function CreateTransactionPage() {
         isCleared,
         tagIds: Array.from(selectedTagIds),
       });
-      navigate(`/binders/${id}/transactions`);
+      const backAccountId = searchParams.get('accountId');
+      if (backAccountId) {
+        navigate(`/binders/${id}/accounts/${backAccountId}/transactions`);
+      } else {
+        navigate(`/binders/${id}/transactions`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create transaction');
     } finally {
@@ -119,7 +129,10 @@ export default function CreateTransactionPage() {
     }
   }
 
-  const backPath = `/binders/${id}/transactions`;
+  const backAccountId = searchParams.get('accountId');
+  const backPath = backAccountId
+    ? `/binders/${id}/accounts/${backAccountId}/transactions`
+    : `/binders/${id}/transactions`;
 
   return (
     <div className="mx-auto w-full max-w-lg">

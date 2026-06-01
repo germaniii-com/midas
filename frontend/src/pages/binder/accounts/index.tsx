@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Spinner } from '@heroui/react';
-import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { getAccounts, type Account } from '../../../api/accounts';
 
 const typeLabels: Record<string, string> = {
@@ -102,16 +102,30 @@ export default function AccountsPage() {
                     {typeLabels[account.type] || account.type}
                   </span>
                 </div>
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  onPress={() =>
-                    navigate(`/binders/${id}/accounts/${account.id}`)
-                  }
-                >
-                  <PencilIcon width={16} />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    size="sm"
+                    onPress={() =>
+                      navigate(
+                        `/binders/${id}/accounts/${account.id}/transactions`,
+                      )
+                    }
+                  >
+                    <ArrowRightIcon width={16} />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    size="sm"
+                    onPress={() =>
+                      navigate(`/binders/${id}/accounts/${account.id}`)
+                    }
+                  >
+                    <PencilIcon width={16} />
+                  </Button>
+                </div>
               </div>
             );
           })}

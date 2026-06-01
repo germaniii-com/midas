@@ -24,10 +24,14 @@ interface UpdateTransactionBody {
 }
 
 export async function transactionRoutes(app: FastifyInstance) {
-  app.get<{ Params: { id: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { accountId?: string } }>(
     '/binders/:id/transactions',
     async (req, reply) => {
       const { id } = req.params;
+      const { accountId } = req.query;
+
+      const filters = [eq(transactions.binderId, id)];
+      if (accountId) filters.push(eq(transactions.accountId, accountId));
 
       const rows = await db
         .select({
@@ -46,7 +50,7 @@ export async function transactionRoutes(app: FastifyInstance) {
         .from(transactions)
         .leftJoin(accounts, eq(transactions.accountId, accounts.id))
         .leftJoin(payees, eq(transactions.payeeId, payees.id))
-        .where(eq(transactions.binderId, id))
+        .where(and(...filters))
         .orderBy(sql`${transactions.date} DESC, ${transactions.createdAt} DESC`);
 
       if (rows.length === 0) return reply.send([]);

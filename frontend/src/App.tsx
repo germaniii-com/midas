@@ -5,6 +5,7 @@ import BinderLayout from "./pages/binder/BinderLayout";
 import AccountsPage from "./pages/binder/accounts";
 import CreateAccountPage from "./pages/binder/accounts/create";
 import EditAccountPage from "./pages/binder/accounts/edit";
+import AccountTransactionsPage from "./pages/binder/accounts/transactions";
 import TransactionsPage from "./pages/binder/transactions";
 import CreateTransactionPage from "./pages/binder/transactions/create";
 import EditTransactionPage from "./pages/binder/transactions/edit";
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="accounts/create" element={<CreateAccountPage />} />
         <Route path="accounts/:accountId" element={<EditAccountPage />} />
+        <Route path="accounts/:accountId/transactions" element={<AccountTransactionsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="transactions/create" element={<CreateTransactionPage />} />
         <Route path="transactions/:transactionId" element={<EditTransactionPage />} />

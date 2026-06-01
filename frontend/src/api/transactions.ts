@@ -43,8 +43,12 @@ export interface UpdateTransactionData {
 
 export async function getTransactions(
   binderId: string,
+  accountId?: string,
 ): Promise<Transaction[]> {
-  const res = await fetch(`${API_URL}/api/binders/${binderId}/transactions`);
+  const params = accountId ? `?accountId=${encodeURIComponent(accountId)}` : '';
+  const res = await fetch(
+    `${API_URL}/api/binders/${binderId}/transactions${params}`,
+  );
   if (!res.ok) throw new Error('Failed to fetch transactions');
   return res.json();
 }
