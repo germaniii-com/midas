@@ -11,6 +11,7 @@ const currencies = [
   { value: 'CAD', label: 'CAD - Canadian Dollar' },
   { value: 'GBP', label: 'GBP - British Pound' },
   { value: 'JPY', label: 'JPY - Japanese Yen' },
+  { value: 'PHP', label: 'PHP - Philippine Peso' },
   { value: 'ARS', label: 'ARS - Argentine Peso' },
   { value: 'COP', label: 'COP - Colombian Peso' },
   { value: 'BRL', label: 'BRL - Brazilian Real' },
