@@ -55,8 +55,8 @@ export default function CreateTransactionPage() {
       getPayees(id),
       getTags(id),
     ]).then(([a, p, t]) => {
-      setAccounts(a);
-      if (preselected && a.some((acct) => acct.id === preselected)) {
+      setAccounts(a.accounts);
+      if (preselected && a.accounts.some((acct) => acct.id === preselected)) {
         setAccountId(preselected);
       }
       setPayees(p);

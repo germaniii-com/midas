@@ -74,7 +74,7 @@ export default function EditTransactionPage() {
         setSelectedTagIds(new Set(tx.tags.map((tag) => tag.id)));
         setNotes(tx.notes || '');
         setIsCleared(tx.isCleared);
-        setAccounts(a);
+        setAccounts(a.accounts);
         setPayees(p);
         setTags(t);
       })

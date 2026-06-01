@@ -5,6 +5,12 @@ export interface CategoryInfo {
   name: string;
 }
 
+export interface CategorySum {
+  categoryId: string;
+  categoryName: string;
+  balance: string;
+}
+
 export interface Account {
   id: string;
   binderId: string;
@@ -27,7 +33,7 @@ export interface UpdateAccountData {
   categoryIds?: string[];
 }
 
-export async function getAccounts(binderId: string): Promise<Account[]> {
+export async function getAccounts(binderId: string): Promise<{ accounts: Account[]; categorySums: CategorySum[] }> {
   const res = await fetch(`${API_URL}/api/binders/${binderId}/accounts`);
   if (!res.ok) throw new Error('Failed to fetch accounts');
   return res.json();

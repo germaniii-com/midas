@@ -33,7 +33,7 @@ export async function accountRoutes(app: FastifyInstance) {
         .where(eq(accounts.binderId, req.params.id))
         .orderBy(accounts.name);
 
-      if (accountList.length === 0) return reply.send([]);
+      if (accountList.length === 0) return reply.send({ accounts: [], categorySums: [] });
 
       const accountIds = accountList.map((a) => a.id);
       const categoryRows = await db
@@ -52,12 +52,25 @@ export async function accountRoutes(app: FastifyInstance) {
         categoriesByAccountId[cr.accountId].push({ id: cr.id, name: cr.name });
       }
 
+      const categorySums = await db
+        .select({
+          categoryId: accountCategories.categoryId,
+          categoryName: categories.name,
+          balance:
+            sql<string>`COALESCE(SUM(COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = account_categories.account_id), 0)), 0)`,
+        })
+        .from(accountCategories)
+        .innerJoin(categories, eq(categories.id, accountCategories.categoryId))
+        .where(eq(accountCategories.binderId, req.params.id))
+        .groupBy(accountCategories.categoryId, categories.name)
+        .orderBy(categories.name);
+
       const result = accountList.map((a) => ({
         ...a,
         categories: categoriesByAccountId[a.id] || [],
       }));
 
-      return reply.send(result);
+      return reply.send({ accounts: result, categorySums });
     },
   );
 
