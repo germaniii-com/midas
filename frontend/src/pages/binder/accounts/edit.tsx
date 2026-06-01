@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Input, Select, SelectItem, Spinner } from '@heroui/react';
-import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Button, Input, Select, SelectItem, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
+import { ArrowLeftIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { getAccount, updateAccount, deleteAccount } from '../../../api/accounts';
+import { getCategories, createCategory, type Category } from '../../../api/categories';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 
 const accountTypes = [
@@ -20,25 +21,52 @@ export default function EditAccountPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [type, setType] = useState('checking');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
   useEffect(() => {
     if (!id || !accountId) return;
     setLoading(true);
-    getAccount(id, accountId)
-      .then((account) => {
+    Promise.all([
+      getAccount(id, accountId),
+      getCategories(id),
+    ])
+      .then(([account, cats]) => {
         setName(account.name);
         setType(account.type);
+        setCategories(cats);
+        setSelectedCategoryIds(new Set(account.categories.map((c) => c.id)));
       })
       .catch(() => {
         navigate(`/binders/${id}/accounts`);
       })
       .finally(() => setLoading(false));
   }, [id, accountId]);
+
+  async function handleCreateCategory() {
+    if (!id || !newCategoryName.trim()) return;
+    setCreatingCategory(true);
+    try {
+      const category = await createCategory(id, { name: newCategoryName.trim() });
+      setCategories((prev) => [...prev, category]);
+      setSelectedCategoryIds((prev) => new Set(prev).add(category.id));
+      setCategoryModalOpen(false);
+      setNewCategoryName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create category');
+    } finally {
+      setCreatingCategory(false);
+    }
+  }
 
   async function handleSave() {
     if (!name.trim()) {
@@ -49,7 +77,11 @@ export default function EditAccountPage() {
     setSaving(true);
     setError('');
     try {
-      await updateAccount(id, accountId, { name: name.trim(), type });
+      await updateAccount(id, accountId, {
+        name: name.trim(),
+        type,
+        categoryIds: Array.from(selectedCategoryIds),
+      });
       navigate(`/binders/${id}/accounts`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update account');
@@ -120,6 +152,31 @@ export default function EditAccountPage() {
           ))}
         </Select>
 
+        <div className="flex items-end gap-2">
+          <Select
+            label="Categories"
+            placeholder="Select categories"
+            selectionMode="multiple"
+            selectedKeys={selectedCategoryIds}
+            onSelectionChange={(keys) => {
+              setSelectedCategoryIds(new Set(Array.from(keys).map(String)));
+            }}
+            className="flex-1"
+          >
+            {categories.map((c) => (
+              <SelectItem key={c.id}>{c.name}</SelectItem>
+            ))}
+          </Select>
+          <Button
+            isIconOnly
+            variant="flat"
+            onPress={() => setCategoryModalOpen(true)}
+            className="mb-0.5"
+          >
+            <PlusIcon width={18} />
+          </Button>
+        </div>
+
         {error && <p className="text-danger text-sm">{error}</p>}
 
         <div className="flex gap-3 mt-2">
@@ -151,6 +208,33 @@ export default function EditAccountPage() {
       >
         <p>Are you sure you want to delete <strong>{name}</strong>? This action cannot be undone.</p>
       </DeleteConfirmModal>
+
+      <Modal isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} placement="center">
+        <ModalContent>
+          <ModalHeader>New Category</ModalHeader>
+          <ModalBody>
+            <Input
+              label="Name"
+              placeholder="e.g. Bills"
+              value={newCategoryName}
+              onValueChange={setNewCategoryName}
+              autoFocus
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setCategoryModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleCreateCategory}
+              isLoading={creatingCategory}
+            >
+              Create
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

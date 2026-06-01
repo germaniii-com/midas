@@ -14,6 +14,9 @@ import ReportsPage from "./pages/binder/reports";
 import TagsPage from "./pages/binder/tags";
 import CreateTagPage from "./pages/binder/tags/create";
 import EditTagPage from "./pages/binder/tags/edit";
+import CategoriesPage from "./pages/binder/categories";
+import CreateCategoryPage from "./pages/binder/categories/create";
+import EditCategoryPage from "./pages/binder/categories/edit";
 
 export default function App() {
   return (
@@ -34,6 +37,9 @@ export default function App() {
         <Route path="tags" element={<TagsPage />} />
         <Route path="tags/create" element={<CreateTagPage />} />
         <Route path="tags/:tagId" element={<EditTagPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="categories/create" element={<CreateCategoryPage />} />
+        <Route path="categories/:categoryId" element={<EditCategoryPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

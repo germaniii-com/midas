@@ -67,6 +67,33 @@ export const accountTags = pgTable(
   }),
 );
 
+export const categories = pgTable('categories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  binderId: uuid('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 100 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const accountCategories = pgTable(
+  'account_categories',
+  {
+    binderId: uuid('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.accountId, table.categoryId] }),
+  }),
+);
+
 export const transactions = pgTable(
   'transactions',
   {

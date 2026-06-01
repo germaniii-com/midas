@@ -7,6 +7,7 @@ import {
   CalendarDaysIcon,
   ChartBarIcon,
   TagIcon,
+  FolderIcon,
   ArrowLeftOnRectangleIcon,
   SunIcon,
   MoonIcon,
@@ -22,6 +23,7 @@ const navItems = [
   { label: 'Payment Schedules', path: 'payment-schedules', icon: CalendarDaysIcon },
   { label: 'Reports', path: 'reports', icon: ChartBarIcon },
   { label: 'Tags', path: 'tags', icon: TagIcon },
+  { label: 'Categories', path: 'categories', icon: FolderIcon },
 ];
 
 export default function BinderLayout() {

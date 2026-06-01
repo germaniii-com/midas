@@ -1,5 +1,10 @@
 import { API_URL } from '.';
 
+export interface CategoryInfo {
+  id: string;
+  name: string;
+}
+
 export interface Account {
   id: string;
   binderId: string;
@@ -7,16 +12,19 @@ export interface Account {
   type: string;
   createdAt: string | null;
   balance: string;
+  categories: CategoryInfo[];
 }
 
 export interface CreateAccountData {
   name: string;
   type: string;
+  categoryIds?: string[];
 }
 
 export interface UpdateAccountData {
   name?: string;
   type?: string;
+  categoryIds?: string[];
 }
 
 export async function getAccounts(binderId: string): Promise<Account[]> {

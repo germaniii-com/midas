@@ -1,16 +1,18 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { db } from '../db';
-import { accounts } from '../db/schema';
+import { accounts, categories, accountCategories } from '../db/schema';
 
 interface CreateAccountBody {
   name: string;
   type: string;
+  categoryIds?: string[];
 }
 
 interface UpdateAccountBody {
   name?: string;
   type?: string;
+  categoryIds?: string[];
 }
 
 export async function accountRoutes(app: FastifyInstance) {
@@ -30,7 +32,32 @@ export async function accountRoutes(app: FastifyInstance) {
         .from(accounts)
         .where(eq(accounts.binderId, req.params.id))
         .orderBy(accounts.name);
-      return reply.send(accountList);
+
+      if (accountList.length === 0) return reply.send([]);
+
+      const accountIds = accountList.map((a) => a.id);
+      const categoryRows = await db
+        .select({
+          accountId: accountCategories.accountId,
+          id: categories.id,
+          name: categories.name,
+        })
+        .from(accountCategories)
+        .innerJoin(categories, eq(accountCategories.categoryId, categories.id))
+        .where(inArray(accountCategories.accountId, accountIds));
+
+      const categoriesByAccountId: Record<string, { id: string; name: string }[]> = {};
+      for (const cr of categoryRows) {
+        if (!categoriesByAccountId[cr.accountId]) categoriesByAccountId[cr.accountId] = [];
+        categoriesByAccountId[cr.accountId].push({ id: cr.id, name: cr.name });
+      }
+
+      const result = accountList.map((a) => ({
+        ...a,
+        categories: categoriesByAccountId[a.id] || [],
+      }));
+
+      return reply.send(result);
     },
   );
 
@@ -38,7 +65,7 @@ export async function accountRoutes(app: FastifyInstance) {
     '/binders/:id/accounts/create',
     async (req, reply) => {
       const { id } = req.params;
-      const { name, type } = req.body;
+      const { name, type, categoryIds } = req.body;
 
       if (!name?.trim()) {
         return reply.status(400).send({ error: 'Name is required' });
@@ -73,7 +100,24 @@ export async function accountRoutes(app: FastifyInstance) {
         })
         .returning();
 
-      return reply.status(201).send(account);
+      if (categoryIds && categoryIds.length > 0) {
+        await db.insert(accountCategories).values(
+          categoryIds.map((categoryId) => ({
+            binderId: id,
+            accountId: account.id,
+            categoryId,
+          })),
+        );
+      }
+
+      const categoryList = categoryIds && categoryIds.length > 0
+        ? await db
+            .select({ id: categories.id, name: categories.name })
+            .from(categories)
+            .where(inArray(categories.id, categoryIds))
+        : [];
+
+      return reply.status(201).send({ ...account, categories: categoryList });
     },
   );
 
@@ -94,7 +138,13 @@ export async function accountRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: 'Account not found' });
       }
 
-      return reply.send(account);
+      const categoryList = await db
+        .select({ id: categories.id, name: categories.name })
+        .from(accountCategories)
+        .innerJoin(categories, eq(accountCategories.categoryId, categories.id))
+        .where(eq(accountCategories.accountId, account.id));
+
+      return reply.send({ ...account, categories: categoryList });
     },
   );
 
@@ -102,7 +152,7 @@ export async function accountRoutes(app: FastifyInstance) {
     '/binders/:id/accounts/:accountId',
     async (req, reply) => {
       const { id, accountId } = req.params;
-      const { name, type } = req.body;
+      const { name, type, categoryIds } = req.body;
 
       if (name !== undefined && !name.trim()) {
         return reply.status(400).send({ error: 'Name cannot be empty' });
@@ -142,7 +192,30 @@ export async function accountRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: 'Account not found' });
       }
 
-      return reply.send(account);
+      if (categoryIds !== undefined) {
+        await db
+          .delete(accountCategories)
+          .where(eq(accountCategories.accountId, accountId));
+
+        if (categoryIds.length > 0) {
+          await db.insert(accountCategories).values(
+            categoryIds.map((categoryId) => ({
+              binderId: id,
+              accountId,
+              categoryId,
+            })),
+          );
+        }
+      }
+
+      const categoryList = categoryIds && categoryIds.length > 0
+        ? await db
+            .select({ id: categories.id, name: categories.name })
+            .from(categories)
+            .where(inArray(categories.id, categoryIds))
+        : [];
+
+      return reply.send({ ...account, categories: categoryList });
     },
   );
 

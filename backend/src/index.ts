@@ -3,6 +3,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { binderRoutes } from './routes/binders';
 import { tagRoutes } from './routes/tags';
+import { categoryRoutes } from './routes/categories';
 import { accountRoutes } from './routes/accounts';
 import { transactionRoutes } from './routes/transactions';
 import { payeeRoutes } from './routes/payees';
@@ -17,6 +18,7 @@ async function routes(app: FastifyInstance) {
   });
   app.register(binderRoutes);
   app.register(tagRoutes);
+  app.register(categoryRoutes);
   app.register(accountRoutes);
   app.register(transactionRoutes);
   app.register(payeeRoutes);

@@ -93,7 +93,6 @@ export default function AccountTransactionsPage() {
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Payee</th>
                 <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3">Tags</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -120,26 +119,6 @@ export default function AccountTransactionsPage() {
                     >
                       {amt >= 0 ? '+' : ''}
                       {formatCurrency(amt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {tx.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                            style={{
-                              backgroundColor: (tag.color || '#3B82F6') + '20',
-                              color: tag.color || '#3B82F6',
-                            }}
-                          >
-                            <span
-                              className="h-1.5 w-1.5 rounded-full"
-                              style={{ backgroundColor: tag.color || '#3B82F6' }}
-                            />
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <Button

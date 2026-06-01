@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Input, Select, SelectItem } from '@heroui/react';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
+import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { createAccount } from '../../../api/accounts';
+import { getCategories, createCategory, type Category } from '../../../api/categories';
 
 const accountTypes = [
   { value: 'checking', label: 'Checking' },
@@ -19,8 +20,35 @@ export default function CreateAccountPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [type, setType] = useState('checking');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    getCategories(id).then(setCategories).catch(() => {});
+  }, [id]);
+
+  async function handleCreateCategory() {
+    if (!id || !newCategoryName.trim()) return;
+    setCreatingCategory(true);
+    try {
+      const category = await createCategory(id, { name: newCategoryName.trim() });
+      setCategories((prev) => [...prev, category]);
+      setSelectedCategoryIds((prev) => new Set(prev).add(category.id));
+      setCategoryModalOpen(false);
+      setNewCategoryName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create category');
+    } finally {
+      setCreatingCategory(false);
+    }
+  }
 
   async function handleSubmit() {
     if (!name.trim()) {
@@ -31,7 +59,11 @@ export default function CreateAccountPage() {
     setSubmitting(true);
     setError('');
     try {
-      await createAccount(id, { name: name.trim(), type });
+      await createAccount(id, {
+        name: name.trim(),
+        type,
+        categoryIds: Array.from(selectedCategoryIds),
+      });
       navigate(`/binders/${id}/accounts`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create account');
@@ -81,6 +113,31 @@ export default function CreateAccountPage() {
           ))}
         </Select>
 
+        <div className="flex items-end gap-2">
+          <Select
+            label="Categories"
+            placeholder="Select categories"
+            selectionMode="multiple"
+            selectedKeys={selectedCategoryIds}
+            onSelectionChange={(keys) => {
+              setSelectedCategoryIds(new Set(Array.from(keys).map(String)));
+            }}
+            className="flex-1"
+          >
+            {categories.map((c) => (
+              <SelectItem key={c.id}>{c.name}</SelectItem>
+            ))}
+          </Select>
+          <Button
+            isIconOnly
+            variant="flat"
+            onPress={() => setCategoryModalOpen(true)}
+            className="mb-0.5"
+          >
+            <PlusIcon width={18} />
+          </Button>
+        </div>
+
         {error && <p className="text-danger text-sm">{error}</p>}
 
         <Button
@@ -92,6 +149,33 @@ export default function CreateAccountPage() {
           Create Account
         </Button>
       </div>
+
+      <Modal isOpen={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} placement="center">
+        <ModalContent>
+          <ModalHeader>New Category</ModalHeader>
+          <ModalBody>
+            <Input
+              label="Name"
+              placeholder="e.g. Bills"
+              value={newCategoryName}
+              onValueChange={setNewCategoryName}
+              autoFocus
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setCategoryModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleCreateCategory}
+              isLoading={creatingCategory}
+            >
+              Create
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
