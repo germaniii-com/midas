@@ -50,6 +50,22 @@ export async function binderRoutes(app: FastifyInstance) {
     return reply.status(201).send(binder);
   });
 
+  app.get<{ Params: { id: string } }>('/binders/:id', async (req, reply) => {
+    const [binder] = await db
+      .select({
+        id: budgetBinders.id,
+        name: budgetBinders.name,
+        description: budgetBinders.description,
+        currency: budgetBinders.currency,
+      })
+      .from(budgetBinders)
+      .where(eq(budgetBinders.id, req.params.id));
+    if (!binder) {
+      return reply.status(404).send({ error: 'Binder not found' });
+    }
+    return reply.send(binder);
+  });
+
   app.post<{ Body: LoginBody }>('/binders/login', async (req, reply) => {
     const { name, password } = req.body;
     const [binder] = await db

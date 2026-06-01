@@ -20,6 +20,12 @@ export async function getBinders(): Promise<Binder[]> {
   return res.json();
 }
 
+export async function getBinderById(id: string): Promise<Binder> {
+  const res = await fetch(`${API_URL}/api/binders/${id}`);
+  if (!res.ok) throw new Error('Binder not found');
+  return res.json();
+}
+
 export async function createBinder(data: CreateBinderData): Promise<Binder> {
   const res = await fetch(`${API_URL}/api/binders`, {
     method: 'POST',
