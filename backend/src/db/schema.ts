@@ -11,14 +11,29 @@ import {
   foreignKey,
 } from 'drizzle-orm/pg-core';
 
+export const budgetBinders = pgTable('budget_binders', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  description: text('description'),
+  currency: varchar('currency', { length: 3 }).default('USD'),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export const payees = pgTable('payees', {
   id: uuid('id').defaultRandom().primaryKey(),
+  binderId: uuid('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 100 }).notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
 export const tags = pgTable('tags', {
   id: uuid('id').defaultRandom().primaryKey(),
+  binderId: uuid('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 50 }).notNull().unique(),
   color: varchar('color', { length: 7 }).default('#3B82F6'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -26,6 +41,9 @@ export const tags = pgTable('tags', {
 
 export const accounts = pgTable('accounts', {
   id: uuid('id').defaultRandom().primaryKey(),
+  binderId: uuid('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 100 }).notNull(),
   type: varchar('type', { length: 20 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -34,6 +52,9 @@ export const accounts = pgTable('accounts', {
 export const accountTags = pgTable(
   'account_tags',
   {
+    binderId: uuid('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
     accountId: uuid('account_id')
       .notNull()
       .references(() => accounts.id, { onDelete: 'cascade' }),
@@ -50,6 +71,9 @@ export const transactions = pgTable(
   'transactions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    binderId: uuid('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
     accountId: uuid('account_id')
       .notNull()
       .references(() => accounts.id, { onDelete: 'cascade' }),
@@ -71,6 +95,9 @@ export const transactions = pgTable(
 
 export const paymentSchedules = pgTable('payment_schedules', {
   id: uuid('id').defaultRandom().primaryKey(),
+  binderId: uuid('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   accountId: uuid('account_id')
     .notNull()
     .references(() => accounts.id, { onDelete: 'cascade' }),
@@ -84,6 +111,9 @@ export const paymentSchedules = pgTable('payment_schedules', {
 
 export const investments = pgTable('investments', {
   id: uuid('id').defaultRandom().primaryKey(),
+  binderId: uuid('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   accountId: uuid('account_id')
     .notNull()
     .references(() => accounts.id, { onDelete: 'cascade' }),
