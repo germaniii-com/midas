@@ -3,20 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Input, Select, SelectItem } from '@heroui/react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createBinder } from '../../api/binders';
-
-const currencies = [
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'MXN', label: 'MXN - Mexican Peso' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'JPY', label: 'JPY - Japanese Yen' },
-  { value: 'PHP', label: 'PHP - Philippine Peso' },
-  { value: 'ARS', label: 'ARS - Argentine Peso' },
-  { value: 'COP', label: 'COP - Colombian Peso' },
-  { value: 'BRL', label: 'BRL - Brazilian Real' },
-  { value: 'CLP', label: 'CLP - Chilean Peso' },
-];
+import { currencies } from '../../constants/currencies';
 
 export default function CreateBinder() {
   const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { budgetBinders } from '../db/schema';
 
@@ -65,6 +65,57 @@ export async function binderRoutes(app: FastifyInstance) {
     }
     return reply.send(binder);
   });
+
+  app.put<{ Params: { id: string }; Body: { name?: string; currency?: string } }>(
+    '/binders/:id',
+    async (req, reply) => {
+      const { name, currency } = req.body;
+      const updates: Partial<typeof budgetBinders.$inferInsert> = {};
+
+      if (name !== undefined) {
+        if (!name.trim()) {
+          return reply.status(400).send({ error: 'Name cannot be empty' });
+        }
+        const [existing] = await db
+          .select({ id: budgetBinders.id })
+          .from(budgetBinders)
+          .where(
+            and(
+              sql`LOWER(${budgetBinders.name}) = LOWER(${name.trim()})`,
+              sql`${budgetBinders.id} != ${req.params.id}`,
+            ),
+          )
+          .limit(1);
+        if (existing) {
+          return reply
+            .status(409)
+            .send({ error: 'A binder with this name already exists' });
+        }
+        updates.name = name.trim();
+      }
+
+      if (currency !== undefined) {
+        updates.currency = currency;
+      }
+
+      const [binder] = await db
+        .update(budgetBinders)
+        .set(updates)
+        .where(eq(budgetBinders.id, req.params.id))
+        .returning({
+          id: budgetBinders.id,
+          name: budgetBinders.name,
+          description: budgetBinders.description,
+          currency: budgetBinders.currency,
+        });
+
+      if (!binder) {
+        return reply.status(404).send({ error: 'Binder not found' });
+      }
+
+      return reply.send(binder);
+    },
+  );
 
   app.post<{ Body: LoginBody }>('/binders/login', async (req, reply) => {
     const { name, password } = req.body;

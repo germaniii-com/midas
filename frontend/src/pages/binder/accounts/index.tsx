@@ -3,16 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Spinner, Tabs, Tab } from '@heroui/react';
 import { PlusIcon, PencilIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { getAccounts, type Account, type CategorySum } from '../../../api/accounts';
-
-const typeLabels: Record<string, string> = {
-  checking: 'Checking',
-  savings: 'Savings',
-  'credit-card': 'Credit Card',
-  cash: 'Cash',
-  investment: 'Investment',
-  loan: 'Loan',
-  other: 'Other',
-};
+import { typeLabels } from '../../../constants/accountTypes';
 
 const STORAGE_KEY = 'binder_accounts_view_mode';
 

@@ -5,16 +5,7 @@ import { ArrowLeftIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { getAccount, updateAccount, deleteAccount } from '../../../api/accounts';
 import { getCategories, createCategory, type Category } from '../../../api/categories';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
-
-const accountTypes = [
-  { value: 'checking', label: 'Checking' },
-  { value: 'savings', label: 'Savings' },
-  { value: 'credit-card', label: 'Credit Card' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'investment', label: 'Investment' },
-  { value: 'loan', label: 'Loan' },
-  { value: 'other', label: 'Other' },
-];
+import { accountTypes } from '../../../constants/accountTypes';
 
 export default function EditAccountPage() {
   const { id, accountId } = useParams<{ id: string; accountId: string }>();

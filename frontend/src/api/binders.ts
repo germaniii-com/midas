@@ -7,6 +7,11 @@ export interface Binder {
   currency: string;
 }
 
+export interface UpdateBinderData {
+  name?: string;
+  currency?: string;
+}
+
 export interface CreateBinderData {
   name: string;
   password: string;
@@ -48,6 +53,22 @@ export async function loginToBinder(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Login failed' }));
     throw new Error(err.error || 'Login failed');
+  }
+  return res.json();
+}
+
+export async function updateBinder(
+  id: string,
+  data: UpdateBinderData,
+): Promise<Binder> {
+  const res = await fetch(`${API_URL}/api/binders/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to update binder' }));
+    throw new Error(err.error || 'Failed to update binder');
   }
   return res.json();
 }

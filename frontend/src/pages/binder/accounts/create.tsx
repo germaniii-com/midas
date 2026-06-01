@@ -4,16 +4,7 @@ import { Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, Mo
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { createAccount } from '../../../api/accounts';
 import { getCategories, createCategory, type Category } from '../../../api/categories';
-
-const accountTypes = [
-  { value: 'checking', label: 'Checking' },
-  { value: 'savings', label: 'Savings' },
-  { value: 'credit-card', label: 'Credit Card' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'investment', label: 'Investment' },
-  { value: 'loan', label: 'Loan' },
-  { value: 'other', label: 'Other' },
-];
+import { accountTypes } from '../../../constants/accountTypes';
 
 export default function CreateAccountPage() {
   const { id } = useParams<{ id: string }>();

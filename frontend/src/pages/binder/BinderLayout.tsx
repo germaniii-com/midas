@@ -1,30 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useParams, useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Spinner } from '@heroui/react';
+import { Button, Input, Select, SelectItem, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import {
-  WalletIcon,
-  ArrowsRightLeftIcon,
-  CalendarDaysIcon,
-  ChartBarIcon,
-  TagIcon,
-  FolderIcon,
   ArrowLeftOnRectangleIcon,
   SunIcon,
   MoonIcon,
   ChevronLeftIcon,
   Bars3Icon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
-import { getBinderById, type Binder } from '../../api/binders';
+import { getBinderById, updateBinder, type Binder } from '../../api/binders';
 import { useTheme } from '../../hooks/useTheme';
-
-const navItems = [
-  { label: 'Accounts', path: 'accounts', icon: WalletIcon },
-  { label: 'Transactions', path: 'transactions', icon: ArrowsRightLeftIcon },
-  { label: 'Payment Schedules', path: 'payment-schedules', icon: CalendarDaysIcon },
-  { label: 'Reports', path: 'reports', icon: ChartBarIcon },
-  { label: 'Tags', path: 'tags', icon: TagIcon },
-  { label: 'Categories', path: 'categories', icon: FolderIcon },
-];
+import { currencies } from '../../constants/currencies';
+import { navItems } from '../../constants/navItems';
 
 export default function BinderLayout() {
   const { id } = useParams<{ id: string }>();
@@ -33,8 +21,16 @@ export default function BinderLayout() {
   const { theme, toggle } = useTheme();
   const [binder, setBinder] = useState<Binder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem('binder_sidebar_collapsed') === 'true';
+  });
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editCurrency, setEditCurrency] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -45,12 +41,37 @@ export default function BinderLayout() {
   }, [id]);
 
   useEffect(() => {
+    localStorage.setItem('binder_sidebar_collapsed', String(collapsed));
+  }, [collapsed]);
+
+  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && drawerOpen) setDrawerOpen(false);
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [drawerOpen]);
+
+  async function handleEditSave() {
+    if (!editName.trim()) {
+      setEditError('Name is required');
+      return;
+    }
+    setEditSubmitting(true);
+    setEditError('');
+    try {
+      const updated = await updateBinder(id!, {
+        name: editName.trim(),
+        currency: editCurrency,
+      });
+      setBinder(updated);
+      setEditOpen(false);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to update');
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -126,7 +147,20 @@ export default function BinderLayout() {
           </button>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-semibold truncate">{binder.name}</h2>
+              <div className="flex items-center gap-1">
+                <h2 className="text-sm font-semibold truncate">{binder.name}</h2>
+                <button
+                  onClick={() => {
+                    setEditName(binder.name);
+                    setEditCurrency(binder.currency);
+                    setEditOpen(true);
+                  }}
+                  className="p-1 rounded-md hover:bg-app-surface text-app-muted hover:text-app-text transition-colors"
+                  aria-label="Edit binder"
+                >
+                  <PencilIcon width={14} />
+                </button>
+              </div>
               <p className="text-xs text-app-muted">{binder.currency}</p>
             </div>
           )}
@@ -233,6 +267,49 @@ export default function BinderLayout() {
           </div>
         </div>
       )}
+
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} placement="center">
+        <ModalContent>
+          <ModalHeader>Edit Binder</ModalHeader>
+          <ModalBody className="flex flex-col gap-4">
+            <Input
+              label="Name"
+              value={editName}
+              onValueChange={(v) => {
+                setEditName(v);
+                setEditError('');
+              }}
+              isRequired
+              isInvalid={!!editError}
+              errorMessage={editError}
+            />
+            <Select
+              label="Currency"
+              selectedKeys={[editCurrency]}
+              onSelectionChange={(keys) => {
+                const val = Array.from(keys)[0];
+                if (val) setEditCurrency(String(val));
+              }}
+            >
+              {currencies.map((c) => (
+                <SelectItem key={c.value}>{c.label}</SelectItem>
+              ))}
+            </Select>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              isLoading={editSubmitting}
+              onPress={handleEditSave}
+            >
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
