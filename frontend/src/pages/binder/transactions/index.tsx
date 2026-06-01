@@ -64,9 +64,7 @@ export default function TransactionsPage() {
       {transactions.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-app-muted text-lg mb-2">No transactions yet</p>
-          <p className="text-app-muted text-sm">
-            Add your first transaction to start tracking.
-          </p>
+          <p className="text-app-muted text-sm">Add your first transaction to start tracking.</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-app-border">
@@ -77,8 +75,6 @@ export default function TransactionsPage() {
                 <th className="px-4 py-3">Account</th>
                 <th className="px-4 py-3">Payee</th>
                 <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3">Tags</th>
-                <th className="px-4 py-3">Cleared</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -88,14 +84,14 @@ export default function TransactionsPage() {
                 return (
                   <tr
                     key={tx.id}
-                    className="border-b border-app-border last:border-b-0 hover:bg-app-surface/50 transition-colors"
+                    className={`border-b border-app-border last:border-b-0 hover:bg-app-surface/50 transition-colors ${
+                      !tx.isCleared ? 'opacity-40' : ''
+                    }`}
                   >
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
                       {formatDate(tx.date)}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap font-medium">
-                      {tx.accountName}
-                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap font-medium">{tx.accountName}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
                       {tx.payeeName || '—'}
                     </td>
@@ -107,44 +103,16 @@ export default function TransactionsPage() {
                       {amt >= 0 ? '+' : ''}
                       {formatCurrency(amt)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {tx.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                            style={{
-                              backgroundColor: (tag.color || '#3B82F6') + '20',
-                              color: tag.color || '#3B82F6',
-                            }}
-                          >
-                            <span
-                              className="h-1.5 w-1.5 rounded-full"
-                              style={{ backgroundColor: tag.color || '#3B82F6' }}
-                            />
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-app-muted">
-                      {tx.isCleared ? '✓' : '○'}
-                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-1">
                         <Button
                           isIconOnly
                           variant="light"
                           size="sm"
-                          onPress={() =>
-                            navigate(
-                              `/binders/${id}/transactions/${tx.id}`,
-                            )
-                          }
+                          onPress={() => navigate(`/binders/${id}/transactions/${tx.id}`)}
                         >
                           <PencilIcon width={15} />
                         </Button>
-
                       </div>
                     </td>
                   </tr>

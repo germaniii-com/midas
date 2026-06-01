@@ -94,7 +94,6 @@ export default function AccountTransactionsPage() {
                 <th className="px-4 py-3">Payee</th>
                 <th className="px-4 py-3 text-right">Amount</th>
                 <th className="px-4 py-3">Tags</th>
-                <th className="px-4 py-3">Cleared</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -104,7 +103,9 @@ export default function AccountTransactionsPage() {
                 return (
                   <tr
                     key={tx.id}
-                    className="border-b border-app-border last:border-b-0 hover:bg-app-surface/50 transition-colors"
+                    className={`border-b border-app-border last:border-b-0 hover:bg-app-surface/50 transition-colors ${
+                      !tx.isCleared ? 'opacity-40' : ''
+                    }`}
                   >
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
                       {formatDate(tx.date)}
@@ -139,9 +140,6 @@ export default function AccountTransactionsPage() {
                           </span>
                         ))}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-app-muted">
-                      {tx.isCleared ? '✓' : '○'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <Button
