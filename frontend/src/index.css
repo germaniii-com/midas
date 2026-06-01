@@ -1,15 +1,41 @@
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-surface: #f4f4f5;
+  --color-surface-secondary: #ffffff;
+  --color-text: #18181b;
+  --color-text-muted: #71717a;
+  --color-border: #e4e4e7;
 }
 
-html {
-  font-family: "Noto Sans", system-ui, sans-serif;
+.dark {
+  --color-surface: #09090b;
+  --color-surface-secondary: #18181b;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-border: #27272a;
 }
 
 body {
   min-height: 100vh;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
 }

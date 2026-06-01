@@ -1,0 +1,67 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, Card, CardBody, Spinner } from '@heroui/react';
+import { PlusIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { getBinders, type Binder } from '../../api/binders';
+import { useTheme } from '../../hooks/useTheme';
+import BinderCard from './components/BinderCard';
+import BinderLoginModal from './components/BinderLoginModal';
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const [binders, setBinders] = useState<Binder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBinder, setSelectedBinder] = useState<Binder | null>(null);
+  const { theme, toggle } = useTheme();
+
+  useEffect(() => {
+    getBinders()
+      .then(setBinders)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold sm:text-3xl">Midas</h1>
+        <Button
+          isIconOnly
+          variant="light"
+          onPress={toggle}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+        >
+          {theme === 'light' ? <MoonIcon width={18} /> : <SunIcon width={18} />}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card isPressable onPress={() => navigate('/create')} className="min-h-[120px]">
+          <CardBody className="flex flex-col items-center justify-center p-5 gap-2">
+            <PlusIcon width={24} className="text-app-muted" />
+            <span className="text-app-muted font-medium">Create Binder</span>
+          </CardBody>
+        </Card>
+        {binders.map((binder) => (
+          <BinderCard
+            key={binder.id}
+            binder={binder}
+            onPress={() => setSelectedBinder(binder)}
+          />
+        ))}
+      </div>
+
+      <BinderLoginModal
+        binder={selectedBinder}
+        onClose={() => setSelectedBinder(null)}
+      />
+    </div>
+  );
+}

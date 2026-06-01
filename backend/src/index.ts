@@ -1,15 +1,7 @@
 import 'dotenv/config';
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: true,
-});
-
-export const db = drizzle(pool);
+import { binderRoutes } from './routes/binders';
 
 const app = Fastify({ logger: true });
 
@@ -19,6 +11,7 @@ async function routes(app: FastifyInstance) {
   app.get('/health', async (_req, _reply) => {
     return { status: 'ok' };
   });
+  app.register(binderRoutes);
 }
 
 app.register(routes, { prefix: '/api' });

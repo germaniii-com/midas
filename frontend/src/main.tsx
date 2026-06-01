@@ -1,10 +1,19 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import App from "./App";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { HeroUIProvider } from '@heroui/react';
+import { getInitialTheme } from './hooks/useTheme';
+import './index.css';
+import App from './App';
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+document.documentElement.classList.toggle('dark', getInitialTheme() === 'dark');
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <HeroUIProvider>
+        <App />
+      </HeroUIProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 );

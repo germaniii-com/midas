@@ -1,0 +1,110 @@
+import { useState } from 'react';
+import {
+  Button,
+  Input,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from '@heroui/react';
+import { CheckCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { loginToBinder, type Binder } from '../../../api/binders';
+
+interface BinderLoginModalProps {
+  binder: Binder | null;
+  onClose: () => void;
+}
+
+export default function BinderLoginModal({ binder, onClose }: BinderLoginModalProps) {
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [loggedInName, setLoggedInName] = useState('');
+
+  async function handleLogin() {
+    if (!binder) return;
+    setLoggingIn(true);
+    setLoginError('');
+    try {
+      const result = await loginToBinder(binder.name, password);
+      setLoggedInName(result.name);
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoggingIn(false);
+    }
+  }
+
+  function handleClose() {
+    setPassword('');
+    setShowPassword(false);
+    setLoginError('');
+    setLoggingIn(false);
+    setLoggedInName('');
+    onClose();
+  }
+
+  return (
+    <Modal isOpen={!!binder} onClose={handleClose} placement="center">
+      <ModalContent>
+        {loggedInName ? (
+          <>
+            <ModalBody className="p-8 text-center">
+              <CheckCircleIcon width={48} className="text-success mx-auto mb-4" />
+              <p className="font-semibold text-lg">
+                Logged in to {loggedInName}
+              </p>
+            </ModalBody>
+            <ModalFooter className="justify-center">
+              <Button color="primary" onPress={handleClose}>
+                Continue
+              </Button>
+            </ModalFooter>
+          </>
+        ) : (
+          <>
+            <ModalHeader className="justify-center text-lg">
+              Unlock: {binder?.name}
+            </ModalHeader>
+            <ModalBody>
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onValueChange={(v) => {
+                  setPassword(v);
+                  setLoginError('');
+                }}
+                isInvalid={!!loginError}
+                errorMessage={loginError}
+                endContent={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="bg-transparent border-none cursor-pointer p-0 text-app-muted"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeSlashIcon width={18} /> : <EyeIcon width={18} />}
+                  </button>
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleLogin();
+                }}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={handleClose}>
+                Cancel
+              </Button>
+              <Button color="primary" onPress={handleLogin} isLoading={loggingIn}>
+                Unlock
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+}
