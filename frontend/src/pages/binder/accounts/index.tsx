@@ -142,6 +142,25 @@ export default function AccountsPage() {
 
       {error && <p className="text-danger text-sm mb-4">{error}</p>}
 
+      {accounts.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-app-border bg-app-surface-secondary p-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">All Accounts</p>
+            <p
+              className={`text-lg font-semibold ${
+                accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0) >= 0
+                  ? 'text-success'
+                  : 'text-danger'
+              }`}
+            >
+              {formatBalance(
+                accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0).toFixed(2),
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
       {accounts.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-app-muted text-lg mb-2">No accounts yet</p>
