@@ -68,7 +68,7 @@ export default function AccountTransactionsPage() {
                 ...tx,
                 payeeId: updated.payeeId,
                 payeeName: payeeId
-                  ? payees.find((p) => p.id === payeeId)?.name ?? tx.payeeName
+                  ? (payees.find((p) => p.id === payeeId)?.name ?? tx.payeeName)
                   : null,
               }
             : tx,
@@ -98,11 +98,7 @@ export default function AccountTransactionsPage() {
   useEffect(() => {
     if (!id || !accountId) return;
     setLoading(true);
-    Promise.all([
-      getAccount(id, accountId),
-      getTransactions(id, accountId),
-      getPayees(id),
-    ])
+    Promise.all([getAccount(id, accountId), getTransactions(id, accountId), getPayees(id)])
       .then(([acc, txs, p]) => {
         setAccount(acc);
         setTransactions(txs);
@@ -135,9 +131,7 @@ export default function AccountTransactionsPage() {
       </Button>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">
-          {account ? account.name : 'Transactions'}
-        </h1>
+        <h1 className="text-2xl font-bold">{account ? account.name : 'Transactions'}</h1>
         <div className="flex items-center gap-2">
           <Button
             variant="light"
@@ -148,11 +142,7 @@ export default function AccountTransactionsPage() {
           </Button>
           <Button
             color="primary"
-            onPress={() =>
-              navigate(
-                `/binders/${id}/transactions/create?accountId=${accountId}`,
-              )
-            }
+            onPress={() => navigate(`/binders/${id}/transactions/create?accountId=${accountId}`)}
             startContent={<PlusIcon width={18} />}
           >
             Add Transaction
@@ -165,9 +155,7 @@ export default function AccountTransactionsPage() {
       {transactions.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-app-muted text-lg mb-2">No transactions yet</p>
-          <p className="text-app-muted text-sm">
-            Add your first transaction to this account.
-          </p>
+          <p className="text-app-muted text-sm">Add your first transaction to this account.</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-app-border">
@@ -224,7 +212,14 @@ export default function AccountTransactionsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
-                      {editingPayeeTxId === tx.id ? (
+                      {tx.transferAccountName ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-xs text-app-muted font-medium uppercase tracking-wider">
+                            Transfer -
+                          </span>
+                          <span className="font-medium">{tx.transferAccountName}</span>
+                        </span>
+                      ) : editingPayeeTxId === tx.id ? (
                         <select
                           value={tx.payeeId ?? ''}
                           onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}

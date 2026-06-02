@@ -19,6 +19,9 @@ export interface Transaction {
   isCleared: boolean;
   createdAt: string | null;
   tags: TransactionTag[];
+  transferId: string | null;
+  transferAccountId: string | null;
+  transferAccountName: string | null;
 }
 
 export interface CreateTransactionData {
@@ -26,6 +29,7 @@ export interface CreateTransactionData {
   amount: string;
   date: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   notes?: string | null;
   isCleared?: boolean;
   tagIds?: string[];
@@ -36,6 +40,7 @@ export interface UpdateTransactionData {
   amount?: string;
   date?: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   notes?: string | null;
   isCleared?: boolean;
   tagIds?: string[];

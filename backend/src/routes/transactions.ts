@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and, sql, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { db } from '../db';
 import { transactions, accounts, payees, tags, transactionTags } from '../db/schema';
 
@@ -8,6 +9,7 @@ interface CreateTransactionBody {
   amount: string;
   date: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   notes?: string | null;
   isCleared?: boolean;
   tagIds?: string[];
@@ -18,9 +20,14 @@ interface UpdateTransactionBody {
   amount?: string;
   date?: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   notes?: string | null;
   isCleared?: boolean;
   tagIds?: string[];
+}
+
+function flipAmount(amount: string): string {
+  return amount.startsWith('-') ? amount.slice(1) : `-${amount}`;
 }
 
 export async function transactionRoutes(app: FastifyInstance) {
@@ -32,6 +39,9 @@ export async function transactionRoutes(app: FastifyInstance) {
 
       const filters = [eq(transactions.binderId, id)];
       if (accountId) filters.push(eq(transactions.accountId, accountId));
+
+      const counterpartTx = alias(transactions, 'counterpart_tx');
+      const transferAccount = alias(accounts, 'transfer_account');
 
       const rows = await db
         .select({
@@ -46,10 +56,15 @@ export async function transactionRoutes(app: FastifyInstance) {
           notes: transactions.notes,
           isCleared: transactions.isCleared,
           createdAt: transactions.createdAt,
+          transferId: transactions.transferId,
+          transferAccountId: counterpartTx.accountId,
+          transferAccountName: transferAccount.name,
         })
         .from(transactions)
         .leftJoin(accounts, eq(transactions.accountId, accounts.id))
         .leftJoin(payees, eq(transactions.payeeId, payees.id))
+        .leftJoin(counterpartTx, eq(transactions.transferId, counterpartTx.id))
+        .leftJoin(transferAccount, eq(counterpartTx.accountId, transferAccount.id))
         .where(and(...filters))
         .orderBy(sql`${transactions.date} DESC, ${transactions.createdAt} DESC`);
 
@@ -86,7 +101,7 @@ export async function transactionRoutes(app: FastifyInstance) {
     '/binders/:id/transactions/create',
     async (req, reply) => {
       const { id } = req.params;
-      const { accountId, amount, date, payeeId, notes, isCleared, tagIds } = req.body;
+      const { accountId, amount, date, payeeId, transferAccountId, notes, isCleared, tagIds } = req.body;
 
       if (!accountId) {
         return reply.status(400).send({ error: 'Account is required' });
@@ -106,10 +121,34 @@ export async function transactionRoutes(app: FastifyInstance) {
           amount,
           date,
           payeeId: payeeId ?? null,
+          transferId: null,
           notes: notes ?? null,
           isCleared: isCleared ?? true,
         })
         .returning();
+
+      if (transferAccountId) {
+        const counterpartAmount = flipAmount(amount);
+        const [counterpart] = await db
+          .insert(transactions)
+          .values({
+            binderId: id,
+            accountId: transferAccountId,
+            amount: counterpartAmount,
+            date,
+            payeeId: null,
+            transferId: tx.id,
+            isCleared: isCleared ?? true,
+          })
+          .returning();
+
+        await db
+          .update(transactions)
+          .set({ transferId: counterpart.id })
+          .where(eq(transactions.id, tx.id));
+
+        tx.transferId = counterpart.id;
+      }
 
       if (tagIds && tagIds.length > 0) {
         await db.insert(transactionTags).values(
@@ -137,6 +176,9 @@ export async function transactionRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { id, transactionId } = req.params;
 
+      const counterpartTx = alias(transactions, 'counterpart_tx');
+      const transferAccount = alias(accounts, 'transfer_account');
+
       const [tx] = await db
         .select({
           id: transactions.id,
@@ -150,10 +192,15 @@ export async function transactionRoutes(app: FastifyInstance) {
           notes: transactions.notes,
           isCleared: transactions.isCleared,
           createdAt: transactions.createdAt,
+          transferId: transactions.transferId,
+          transferAccountId: counterpartTx.accountId,
+          transferAccountName: transferAccount.name,
         })
         .from(transactions)
         .leftJoin(accounts, eq(transactions.accountId, accounts.id))
         .leftJoin(payees, eq(transactions.payeeId, payees.id))
+        .leftJoin(counterpartTx, eq(transactions.transferId, counterpartTx.id))
+        .leftJoin(transferAccount, eq(counterpartTx.accountId, transferAccount.id))
         .where(and(eq(transactions.id, transactionId), eq(transactions.binderId, id)));
 
       if (!tx) {
@@ -174,7 +221,23 @@ export async function transactionRoutes(app: FastifyInstance) {
     '/binders/:id/transactions/:transactionId',
     async (req, reply) => {
       const { id, transactionId } = req.params;
-      const { accountId, amount, date, payeeId, notes, isCleared, tagIds } = req.body;
+      const { accountId, amount, date, payeeId, transferAccountId, notes, isCleared, tagIds } = req.body;
+
+      const [oldTx] = await db
+        .select({
+          id: transactions.id,
+          transferId: transactions.transferId,
+          amount: transactions.amount,
+          date: transactions.date,
+          isCleared: transactions.isCleared,
+        })
+        .from(transactions)
+        .where(eq(transactions.id, transactionId))
+        .limit(1);
+
+      if (!oldTx) {
+        return reply.status(404).send({ error: 'Transaction not found' });
+      }
 
       const updates: Partial<typeof transactions.$inferInsert> = {};
       if (accountId !== undefined) updates.accountId = accountId;
@@ -183,6 +246,76 @@ export async function transactionRoutes(app: FastifyInstance) {
       if (payeeId !== undefined) updates.payeeId = payeeId;
       if (notes !== undefined) updates.notes = notes;
       if (isCleared !== undefined) updates.isCleared = isCleared;
+
+      const hadTransfer = oldTx.transferId !== null;
+      const wantsTransfer = transferAccountId !== undefined && transferAccountId !== null;
+
+      if (hadTransfer && !wantsTransfer) {
+        await db
+          .delete(transactionTags)
+          .where(eq(transactionTags.transactionId, oldTx.transferId!));
+        await db
+          .delete(transactions)
+          .where(eq(transactions.id, oldTx.transferId!));
+        updates.transferId = null;
+      } else if (wantsTransfer && !hadTransfer) {
+        const counterpartAmount = flipAmount(amount ?? oldTx.amount);
+        const [counterpart] = await db
+          .insert(transactions)
+          .values({
+            binderId: id,
+            accountId: transferAccountId,
+            amount: counterpartAmount,
+            date: date ?? oldTx.date,
+            payeeId: null,
+            transferId: null,
+            isCleared: isCleared ?? true,
+          })
+          .returning();
+        updates.transferId = counterpart.id;
+      } else if (hadTransfer && wantsTransfer) {
+        const [counterpart] = await db
+          .select({ accountId: transactions.accountId })
+          .from(transactions)
+          .where(eq(transactions.id, oldTx.transferId!))
+          .limit(1);
+
+        if (counterpart && counterpart.accountId !== transferAccountId) {
+          await db
+            .delete(transactionTags)
+            .where(eq(transactionTags.transactionId, oldTx.transferId!));
+          await db
+            .delete(transactions)
+            .where(eq(transactions.id, oldTx.transferId!));
+
+          const counterpartAmount = flipAmount(amount ?? oldTx.amount);
+          const [newCounterpart] = await db
+            .insert(transactions)
+            .values({
+              binderId: id,
+              accountId: transferAccountId,
+              amount: counterpartAmount,
+              date: date ?? oldTx.date,
+              payeeId: null,
+              transferId: null,
+              isCleared: isCleared ?? true,
+            })
+            .returning();
+          updates.transferId = newCounterpart.id;
+        } else {
+          const counterpartUpdates: Partial<typeof transactions.$inferInsert> = {};
+          if (amount !== undefined) counterpartUpdates.amount = flipAmount(amount);
+          if (date !== undefined) counterpartUpdates.date = date;
+          if (isCleared !== undefined) counterpartUpdates.isCleared = isCleared;
+
+          if (Object.keys(counterpartUpdates).length > 0) {
+            await db
+              .update(transactions)
+              .set(counterpartUpdates)
+              .where(eq(transactions.id, oldTx.transferId!));
+          }
+        }
+      }
 
       const [tx] = await db
         .update(transactions)
@@ -226,18 +359,28 @@ export async function transactionRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { id, transactionId } = req.params;
 
-      await db
-        .delete(transactionTags)
-        .where(eq(transactionTags.transactionId, transactionId));
-
-      const [tx] = await db
-        .delete(transactions)
+      const [existing] = await db
+        .select({ transferId: transactions.transferId })
+        .from(transactions)
         .where(and(eq(transactions.id, transactionId), eq(transactions.binderId, id)))
-        .returning({ id: transactions.id });
+        .limit(1);
 
-      if (!tx) {
+      if (!existing) {
         return reply.status(404).send({ error: 'Transaction not found' });
       }
+
+      const txIdsToDelete = [transactionId];
+      if (existing.transferId) {
+        txIdsToDelete.push(existing.transferId);
+      }
+
+      await db
+        .delete(transactionTags)
+        .where(inArray(transactionTags.transactionId, txIdsToDelete));
+
+      await db
+        .delete(transactions)
+        .where(inArray(transactions.id, txIdsToDelete));
 
       return reply.status(204).send();
     },

@@ -31,6 +31,7 @@ export default function CreateTransactionPage() {
   const [accountId, setAccountId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [payeeId, setPayeeId] = useState('');
+  const [transferAccountId, setTransferAccountId] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
   const [isCleared, setIsCleared] = useState(true);
@@ -50,18 +51,16 @@ export default function CreateTransactionPage() {
   useEffect(() => {
     if (!id) return;
     const preselected = searchParams.get('accountId');
-    Promise.all([
-      getAccounts(id),
-      getPayees(id),
-      getTags(id),
-    ]).then(([a, p, t]) => {
-      setAccounts(a.accounts);
-      if (preselected && a.accounts.some((acct) => acct.id === preselected)) {
-        setAccountId(preselected);
-      }
-      setPayees(p);
-      setTags(t);
-    }).catch(() => {});
+    Promise.all([getAccounts(id), getPayees(id), getTags(id)])
+      .then(([a, p, t]) => {
+        setAccounts(a.accounts);
+        if (preselected && a.accounts.some((acct) => acct.id === preselected)) {
+          setAccountId(preselected);
+        }
+        setPayees(p);
+        setTags(t);
+      })
+      .catch(() => {});
   }, [id]);
 
   async function handleCreatePayee() {
@@ -99,10 +98,19 @@ export default function CreateTransactionPage() {
 
   async function handleSubmit() {
     if (!id) return;
-    if (!accountId) { setError('Account is required'); return; }
+    if (!accountId) {
+      setError('Account is required');
+      return;
+    }
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 0) { setError('Enter a valid amount'); return; }
-    if (!date) { setError('Date is required'); return; }
+    if (isNaN(amt) || amt < 0) {
+      setError('Enter a valid amount');
+      return;
+    }
+    if (!date) {
+      setError('Date is required');
+      return;
+    }
 
     setSubmitting(true);
     setError('');
@@ -112,11 +120,11 @@ export default function CreateTransactionPage() {
         amount: isExpense ? String(-amt) : String(amt),
         date,
         payeeId: payeeId || null,
+        transferAccountId: transferAccountId || null,
         notes: notes || null,
         isCleared,
         tagIds: Array.from(selectedTagIds),
       });
-      const backAccountId = searchParams.get('accountId');
       if (backAccountId) {
         navigate(`/binders/${id}/accounts/${backAccountId}/transactions`);
       } else {
@@ -128,6 +136,15 @@ export default function CreateTransactionPage() {
       setSubmitting(false);
     }
   }
+
+  const payeeOptions = [
+    ...payees.map((p) => ({ key: `payee:${p.id}`, name: p.name, type: 'payee' as const })),
+    ...(accountId
+      ? accounts
+          .filter((a) => a.id !== accountId)
+          .map((a) => ({ key: `account:${a.id}`, name: a.name, type: 'account' as const }))
+      : []),
+  ];
 
   const backAccountId = searchParams.get('accountId');
   const backPath = backAccountId
@@ -162,7 +179,10 @@ export default function CreateTransactionPage() {
             min="0"
             placeholder="0.00"
             value={amount}
-            onValueChange={(v) => { setAmount(v); setError(''); }}
+            onValueChange={(v) => {
+              setAmount(v);
+              setError('');
+            }}
             className="w-64"
             classNames={{
               input: 'text-center text-3xl font-bold tabular-nums',
@@ -179,9 +199,7 @@ export default function CreateTransactionPage() {
             +
           </Button>
         </div>
-        <p className="text-sm text-app-muted mt-2">
-          {isExpense ? 'Expense' : 'Income'}
-        </p>
+        <p className="text-sm text-app-muted mt-2">{isExpense ? 'Expense' : 'Income'}</p>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -189,7 +207,10 @@ export default function CreateTransactionPage() {
           label="Date"
           type="date"
           value={date}
-          onValueChange={(v) => { setDate(v); setError(''); }}
+          onValueChange={(v) => {
+            setDate(v);
+            setError('');
+          }}
           isRequired
         />
 
@@ -211,17 +232,42 @@ export default function CreateTransactionPage() {
 
         <div className="flex items-end gap-2">
           <Select
-            label="Payee"
-            placeholder="Select or create"
-            selectedKeys={payeeId ? [payeeId] : []}
+            label="Payee / Transfer"
+            placeholder="Select payee or account"
+            selectedKeys={
+              transferAccountId
+                ? [`account:${transferAccountId}`]
+                : payeeId
+                  ? [`payee:${payeeId}`]
+                  : []
+            }
             onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0];
-              if (val) setPayeeId(String(val));
+              const val = Array.from(keys)[0] as string | undefined;
+              if (!val) return;
+              const [type, id] = val.split(':');
+              if (type === 'account') {
+                setTransferAccountId(id);
+                setPayeeId('');
+              } else {
+                setPayeeId(id);
+                setTransferAccountId('');
+              }
             }}
             className="flex-1"
           >
-            {payees.map((p) => (
-              <SelectItem key={p.id}>{p.name}</SelectItem>
+            {payeeOptions.map((item) => (
+              <SelectItem key={item.key} textValue={item.name}>
+                {item.type === 'account' ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-app-muted font-medium uppercase tracking-wider">
+                      Account -
+                    </span>
+                    <span>{item.name}</span>
+                  </div>
+                ) : (
+                  item.name
+                )}
+              </SelectItem>
             ))}
           </Select>
           <Button
@@ -290,12 +336,7 @@ export default function CreateTransactionPage() {
           </Button>
         </div>
 
-        <Input
-          label="Notes"
-          placeholder="Optional notes"
-          value={notes}
-          onValueChange={setNotes}
-        />
+        <Input label="Notes" placeholder="Optional notes" value={notes} onValueChange={setNotes} />
 
         <label className="flex items-center gap-3 cursor-pointer">
           <input
@@ -309,12 +350,7 @@ export default function CreateTransactionPage() {
 
         {error && <p className="text-danger text-sm">{error}</p>}
 
-        <Button
-          color="primary"
-          onPress={handleSubmit}
-          isLoading={submitting}
-          className="mt-2"
-        >
+        <Button color="primary" onPress={handleSubmit} isLoading={submitting} className="mt-2">
           Create Transaction
         </Button>
       </div>
@@ -336,11 +372,7 @@ export default function CreateTransactionPage() {
             <Button variant="light" onPress={() => setPayeeModalOpen(false)}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              onPress={handleCreatePayee}
-              isLoading={creatingPayee}
-            >
+            <Button color="primary" onPress={handleCreatePayee} isLoading={creatingPayee}>
               Create
             </Button>
           </ModalFooter>
@@ -376,11 +408,7 @@ export default function CreateTransactionPage() {
             <Button variant="light" onPress={() => setTagModalOpen(false)}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              onPress={handleCreateTag}
-              isLoading={creatingTag}
-            >
+            <Button color="primary" onPress={handleCreateTag} isLoading={creatingTag}>
               Create
             </Button>
           </ModalFooter>

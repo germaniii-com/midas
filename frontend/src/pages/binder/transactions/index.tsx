@@ -198,7 +198,15 @@ export default function TransactionsPage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap font-medium">{tx.accountName}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
-                      {editingPayeeTxId === tx.id ? (
+                      {tx.transferAccountName ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-xs text-app-muted font-medium uppercase tracking-wider">
+                            TRANSFER
+                          </span>
+                          <span className="mx-1 text-app-muted">—</span>
+                          <span className="font-medium">{tx.transferAccountName}</span>
+                        </span>
+                      ) : editingPayeeTxId === tx.id ? (
                         <select
                           value={tx.payeeId ?? ''}
                           onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}
