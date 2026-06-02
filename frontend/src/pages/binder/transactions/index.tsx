@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Spinner } from '@heroui/react';
 import { PlusIcon, PencilIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -28,6 +28,11 @@ export default function TransactionsPage() {
   const [editingDateValue, setEditingDateValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const currency = useBinderCurrency();
+
+  const runningBalance = useMemo(
+    () => transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0),
+    [transactions],
+  );
 
   async function fetchTransactions() {
     if (!id) return;
@@ -138,6 +143,15 @@ export default function TransactionsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">
           {categoryName ? `Transactions — ${categoryName}` : 'Transactions'}
+          {categoryName && (
+            <span
+              className={`ml-3 text-lg font-semibold ${
+                runningBalance >= 0 ? 'text-success' : 'text-danger'
+              }`}
+            >
+              {formatCurrency(runningBalance, currency)}
+            </span>
+          )}
         </h1>
         <Button
           color="primary"

@@ -138,7 +138,15 @@ export async function accountRoutes(app: FastifyInstance) {
     '/binders/:id/accounts/:accountId',
     async (req, reply) => {
       const [account] = await db
-        .select()
+        .select({
+          id: accounts.id,
+          binderId: accounts.binderId,
+          name: accounts.name,
+          type: accounts.type,
+          createdAt: accounts.createdAt,
+          balance:
+            sql<string>`COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = accounts.id), 0)`,
+        })
         .from(accounts)
         .where(
           and(

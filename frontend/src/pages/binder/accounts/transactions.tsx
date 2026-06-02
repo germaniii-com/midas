@@ -129,7 +129,18 @@ export default function AccountTransactionsPage() {
       </Button>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{account ? account.name : 'Transactions'}</h1>
+        <h1 className="text-2xl font-bold">
+          {account ? account.name : 'Transactions'}
+          {account && (
+            <span
+              className={`ml-3 text-lg font-semibold ${
+                parseFloat(account.balance) >= 0 ? 'text-success' : 'text-danger'
+              }`}
+            >
+              {formatCurrency(parseFloat(account.balance), currency)}
+            </span>
+          )}
+        </h1>
         <div className="flex items-center gap-2">
           <Button
             variant="light"
