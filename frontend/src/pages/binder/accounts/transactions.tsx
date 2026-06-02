@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Spinner } from '@heroui/react';
 import { PlusIcon, ArrowLeftIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { getAccount, type Account } from '../../../api/accounts';
-import { getTransactions, type Transaction } from '../../../api/transactions';
+import { getTransactions, updateTransaction, type Transaction } from '../../../api/transactions';
+import { getPayees, type Payee } from '../../../api/payees';
 
 function formatCurrency(n: number): string {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -21,6 +22,78 @@ export default function AccountTransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [payees, setPayees] = useState<Payee[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [editingPayeeTxId, setEditingPayeeTxId] = useState<string | null>(null);
+  const [editingDateTxId, setEditingDateTxId] = useState<string | null>(null);
+  const [editingDateValue, setEditingDateValue] = useState('');
+
+  async function handleSaveAmount(transactionId: string) {
+    if (!id) return;
+    const parsed = parseFloat(editingValue);
+    if (isNaN(parsed)) {
+      setEditingId(null);
+      return;
+    }
+    try {
+      const updated = await updateTransaction(id, transactionId, {
+        amount: parsed.toFixed(2),
+      });
+      setTransactions((prev) =>
+        prev.map((tx) => (tx.id === transactionId ? { ...tx, amount: updated.amount } : tx)),
+      );
+    } catch {
+      setError('Failed to update amount');
+    }
+    setEditingId(null);
+  }
+
+  async function fetchPayees() {
+    if (!id) return;
+    try {
+      const data = await getPayees(id);
+      setPayees(data);
+    } catch {}
+  }
+
+  async function handlePayeeSelect(transactionId: string, payeeId: string | null) {
+    if (!id) return;
+    try {
+      const updated = await updateTransaction(id, transactionId, { payeeId });
+      setTransactions((prev) =>
+        prev.map((tx) =>
+          tx.id === transactionId
+            ? {
+                ...tx,
+                payeeId: updated.payeeId,
+                payeeName: payeeId
+                  ? payees.find((p) => p.id === payeeId)?.name ?? tx.payeeName
+                  : null,
+              }
+            : tx,
+        ),
+      );
+    } catch {
+      setError('Failed to update payee');
+    }
+    setEditingPayeeTxId(null);
+  }
+
+  async function handleSaveDate(transactionId: string) {
+    if (!id) return;
+    try {
+      const updated = await updateTransaction(id, transactionId, {
+        date: editingDateValue,
+      });
+      setTransactions((prev) =>
+        prev.map((tx) => (tx.id === transactionId ? { ...tx, date: updated.date } : tx)),
+      );
+    } catch {
+      setError('Failed to update date');
+    }
+    setEditingDateTxId(null);
+  }
 
   useEffect(() => {
     if (!id || !accountId) return;
@@ -28,10 +101,12 @@ export default function AccountTransactionsPage() {
     Promise.all([
       getAccount(id, accountId),
       getTransactions(id, accountId),
+      getPayees(id),
     ])
-      .then(([acc, txs]) => {
+      .then(([acc, txs, p]) => {
         setAccount(acc);
         setTransactions(txs);
+        setPayees(p);
         setError('');
       })
       .catch((err) => {
@@ -108,6 +183,7 @@ export default function AccountTransactionsPage() {
             <tbody>
               {transactions.map((tx) => {
                 const amt = parseFloat(tx.amount);
+                const isEditing = editingId === tx.id;
                 return (
                   <tr
                     key={tx.id}
@@ -120,18 +196,97 @@ export default function AccountTransactionsPage() {
                     }}
                   >
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
-                      {formatDate(tx.date)}
+                      {editingDateTxId === tx.id ? (
+                        <input
+                          type="date"
+                          value={editingDateValue}
+                          onChange={(e) => setEditingDateValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveDate(tx.id);
+                            else if (e.key === 'Escape') setEditingDateTxId(null);
+                          }}
+                          onBlur={() => setEditingDateTxId(null)}
+                          className="rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className="sm:cursor-pointer"
+                          onClick={(e) => {
+                            if (window.innerWidth < 640) return;
+                            e.stopPropagation();
+                            setEditingDateTxId(tx.id);
+                            setEditingDateValue(tx.date);
+                          }}
+                        >
+                          {formatDate(tx.date)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-app-muted">
-                      {tx.payeeName || '—'}
+                      {editingPayeeTxId === tx.id ? (
+                        <select
+                          value={tx.payeeId ?? ''}
+                          onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}
+                          onBlur={() => setEditingPayeeTxId(null)}
+                          autoFocus
+                          className="max-w-32 rounded border border-primary bg-app-surface px-1 py-0.5 text-sm outline-none"
+                        >
+                          <option value="">—</option>
+                          {payees.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className="sm:cursor-pointer"
+                          onClick={(e) => {
+                            if (window.innerWidth < 640) return;
+                            e.stopPropagation();
+                            setEditingPayeeTxId(tx.id);
+                          }}
+                        >
+                          {tx.payeeName || '—'}
+                        </span>
+                      )}
                     </td>
                     <td
                       className={`px-4 py-3 whitespace-nowrap text-right font-semibold tabular-nums ${
                         amt >= 0 ? 'text-success' : 'text-danger'
                       }`}
                     >
-                      {amt >= 0 ? '+' : ''}
-                      {formatCurrency(amt)}
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveAmount(tx.id);
+                            } else if (e.key === 'Escape') {
+                              setEditingId(null);
+                            }
+                          }}
+                          onBlur={() => setEditingId(null)}
+                          className="w-28 rounded border border-primary bg-transparent px-2 py-1 text-right text-sm font-semibold tabular-nums outline-none"
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className="cursor-pointer sm:cursor-text"
+                          onClick={(e) => {
+                            if (window.innerWidth < 640) return;
+                            e.stopPropagation();
+                            setEditingId(tx.id);
+                            setEditingValue(tx.amount);
+                          }}
+                        >
+                          {amt >= 0 ? '+' : ''}
+                          {formatCurrency(amt)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
                       <Button
