@@ -4,6 +4,7 @@ import { Button, Input, Spinner } from '@heroui/react';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { getCategory, updateCategory, deleteCategory } from '../../../api/categories';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
 export default function EditCategoryPage() {
   const { id, categoryId } = useParams<{ id: string; categoryId: string }>();
@@ -38,9 +39,12 @@ export default function EditCategoryPage() {
     setError('');
     try {
       await updateCategory(id, categoryId, { name: name.trim() });
+      toastSuccess('Category updated successfully');
       navigate(`/binders/${id}/categories`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update category');
+      const message = getErrorMessage(err, 'Failed to update category');
+      toastError(message);
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -52,9 +56,12 @@ export default function EditCategoryPage() {
     setError('');
     try {
       await deleteCategory(id, categoryId);
+      toastSuccess('Category deleted successfully');
       navigate(`/binders/${id}/categories`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete category');
+      const message = getErrorMessage(err, 'Failed to delete category');
+      toastError(message);
+      setError(message);
       setDeleting(false);
     }
   }

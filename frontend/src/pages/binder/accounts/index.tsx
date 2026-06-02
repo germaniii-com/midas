@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spinner, Tabs, Tab } from '@heroui/react';
+import { Button, Card, CardBody, Spinner, Tabs, Tab } from '@heroui/react';
 import { PlusIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { getAccounts, type Account, type CategorySum } from '../../../api/accounts';
 import { typeLabels } from '../../../constants/accountTypes';
+import { getErrorMessage } from '../../../utils/toast';
 import { formatCurrency, useBinderCurrency } from '../../../utils/format';
 
 const STORAGE_KEY = 'binder_accounts_view_mode';
@@ -39,7 +40,7 @@ export default function AccountsPage() {
       setCategorySums(data.categorySums);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load accounts');
+      setError(getErrorMessage(err, 'Failed to load accounts'));
     } finally {
       setLoading(false);
     }
@@ -77,32 +78,26 @@ export default function AccountsPage() {
   function renderAccountCard(account: Account) {
     const balanceNum = parseFloat(account.balance);
     return (
-      <div
+      <Card
         key={account.id}
-        className="flex cursor-pointer items-center gap-3 rounded-xl border border-app-border bg-app-surface-secondary p-4 transition-colors hover:bg-app-surface/50"
-        onClick={() => navigate(`/binders/${id}/accounts/${account.id}/transactions`)}
+        isPressable
+        onPress={() => navigate(`/binders/${id}/accounts/${account.id}/transactions`)}
+        className="bg-app-surface-secondary"
       >
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{account.name}</p>
-          <p
-            className={`text-lg font-semibold ${balanceNum >= 0 ? 'text-success' : 'text-danger'}`}
-          >
-            {formatBalance(account.balance, currency)}
-          </p>
-          <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            {typeLabels[account.type] || account.type}
-          </span>
-        </div>
-        <Button
-          isIconOnly
-          variant="light"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/binders/${id}/accounts/${account.id}/transactions`);
-          }}
-        ></Button>
-      </div>
+        <CardBody className="flex flex-row items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{account.name}</p>
+            <p
+              className={`text-lg font-semibold ${balanceNum >= 0 ? 'text-success' : 'text-danger'}`}
+            >
+              {formatBalance(account.balance, currency)}
+            </p>
+            <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              {typeLabels[account.type] || account.type}
+            </span>
+          </div>
+        </CardBody>
+      </Card>
     );
   }
 
@@ -122,7 +117,7 @@ export default function AccountsPage() {
           <Tabs
             selectedKey={viewMode}
             onSelectionChange={(key) => setViewMode(key as 'index' | 'grouped')}
-            variant="underlined"
+            variant="solid"
             size="sm"
           >
             <Tab key="index" title="All" />
@@ -141,23 +136,25 @@ export default function AccountsPage() {
       {error && <p className="text-danger text-sm mb-4">{error}</p>}
 
       {accounts.length > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-app-border bg-app-surface-secondary p-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">All Accounts</p>
-            <p
-              className={`text-lg font-semibold ${
-                accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0) >= 0
-                  ? 'text-success'
-                  : 'text-danger'
-              }`}
-            >
-              {formatBalance(
-                accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0).toFixed(2),
-                currency,
-              )}
-            </p>
-          </div>
-        </div>
+        <Card className="mb-4 bg-app-surface-secondary">
+          <CardBody className="flex flex-row items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">All Accounts</p>
+              <p
+                className={`text-lg font-semibold ${
+                  accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0) >= 0
+                    ? 'text-success'
+                    : 'text-danger'
+                }`}
+              >
+                {formatBalance(
+                  accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0).toFixed(2),
+                  currency,
+                )}
+              </p>
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {accounts.length === 0 ? (

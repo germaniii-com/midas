@@ -9,8 +9,10 @@ import {
   ModalBody,
   ModalFooter,
 } from '@heroui/react';
+import type { ButtonProps } from '@heroui/react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { loginToBinder, type Binder } from '../../../api/binders';
+import { getErrorMessage } from '../../../utils/toast';
 
 interface BinderLoginModalProps {
   binder: Binder | null;
@@ -33,7 +35,7 @@ export default function BinderLoginModal({ binder, onClose }: BinderLoginModalPr
       onClose();
       navigate(`/binders/${result.id}/accounts`);
     } catch (err) {
-      setLoginError(err instanceof Error ? err.message : 'Login failed');
+      setLoginError(getErrorMessage(err, 'Login failed'));
     } finally {
       setLoggingIn(false);
     }
@@ -65,14 +67,16 @@ export default function BinderLoginModal({ binder, onClose }: BinderLoginModalPr
             isInvalid={!!loginError}
             errorMessage={loginError}
             endContent={
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="bg-transparent border-none cursor-pointer p-0 text-app-muted"
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                onPress={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="data-[hover=true]:bg-transparent min-w-0 h-auto p-0"
               >
                 {showPassword ? <EyeSlashIcon width={18} /> : <EyeIcon width={18} />}
-              </button>
+              </Button>
             }
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleLogin();

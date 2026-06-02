@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { createAccount } from '../../../api/accounts';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import { getCategories, createCategory, type Category } from '../../../api/categories';
 import { accountTypes } from '../../../constants/accountTypes';
 
@@ -35,7 +36,7 @@ export default function CreateAccountPage() {
       setCategoryModalOpen(false);
       setNewCategoryName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create category');
+      setError(getErrorMessage(err, 'Failed to create category'));
     } finally {
       setCreatingCategory(false);
     }
@@ -55,9 +56,12 @@ export default function CreateAccountPage() {
         type,
         categoryIds: Array.from(selectedCategoryIds),
       });
+      toastSuccess('Account created successfully');
       navigate(`/binders/${id}/accounts`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create account');
+      const message = getErrorMessage(err, 'Failed to create account');
+      toastError(message);
+      setError(message);
     } finally {
       setSubmitting(false);
     }

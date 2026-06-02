@@ -6,6 +6,7 @@ import { getAccount, updateAccount, deleteAccount } from '../../../api/accounts'
 import { getCategories, createCategory, type Category } from '../../../api/categories';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 import { accountTypes } from '../../../constants/accountTypes';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
 export default function EditAccountPage() {
   const { id, accountId } = useParams<{ id: string; accountId: string }>();
@@ -53,7 +54,7 @@ export default function EditAccountPage() {
       setCategoryModalOpen(false);
       setNewCategoryName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create category');
+      setError(getErrorMessage(err, 'Failed to create category'));
     } finally {
       setCreatingCategory(false);
     }
@@ -73,9 +74,12 @@ export default function EditAccountPage() {
         type,
         categoryIds: Array.from(selectedCategoryIds),
       });
+      toastSuccess('Account updated successfully');
       navigate(transactionsPath);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update account');
+      const message = getErrorMessage(err, 'Failed to update account');
+      toastError(message);
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -87,9 +91,12 @@ export default function EditAccountPage() {
     setError('');
     try {
       await deleteAccount(id, accountId);
+      toastSuccess('Account deleted successfully');
       navigate(`/binders/${id}/accounts`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete account');
+      const message = getErrorMessage(err, 'Failed to delete account');
+      toastError(message);
+      setError(message);
       setDeleting(false);
     }
   }

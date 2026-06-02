@@ -16,6 +16,7 @@ import {
 import { ArrowLeftIcon, TrashIcon, PlusIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 import { getAccounts, type Account } from '../../../api/accounts';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import { getPayees, createPayee, type Payee } from '../../../api/payees';
 import {
   getPaymentSchedule,
@@ -125,7 +126,7 @@ export default function EditPaymentSchedulePage() {
       setPayeeModalOpen(false);
       setNewPayeeName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create payee');
+      setError(getErrorMessage(err, 'Failed to create payee'));
     } finally {
       setCreatingPayee(false);
     }
@@ -162,9 +163,12 @@ export default function EditPaymentSchedulePage() {
         notifyBefore: parseInt(notifyBefore) || 7,
         notifyType: notifyType as 'days' | 'weeks' | 'months',
       });
+      toastSuccess('Payment schedule updated successfully');
       navigate(`/binders/${id}/payment-schedules`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update payment schedule');
+      const message = getErrorMessage(err, 'Failed to update payment schedule');
+      toastError(message);
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -176,9 +180,12 @@ export default function EditPaymentSchedulePage() {
     setError('');
     try {
       await deletePaymentSchedule(id, scheduleId);
+      toastSuccess('Payment schedule deleted successfully');
       navigate(`/binders/${id}/payment-schedules`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete payment schedule');
+      const message = getErrorMessage(err, 'Failed to delete payment schedule');
+      toastError(message);
+      setError(message);
       setDeleting(false);
     }
   }
@@ -427,13 +434,13 @@ export default function EditPaymentSchedulePage() {
         </div>
 
         {previewDates.length > 0 && (
-          <div className="rounded-xl border border-app-border p-4">
+          <div className="p-4">
             <div className="flex items-center gap-1.5 mb-2">
               <p className="text-sm font-semibold">Upcoming dates</p>
               <Tooltip content="Past or today's dates will not show when saved." placement="right" closeDelay={0}>
-                <button type="button" className="inline-flex items-center text-app-muted hover:text-app-text transition-colors">
+                <Button isIconOnly variant="light" size="sm" className="min-w-0 h-auto p-0 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-transparent">
                   <InformationCircleIcon width={16} />
-                </button>
+                </Button>
               </Tooltip>
             </div>
             <div className="flex flex-wrap gap-2">

@@ -23,6 +23,7 @@ import {
 import { getBinderById, updateBinder, type Binder } from '../../api/binders';
 import { useTheme } from '../../hooks/useTheme';
 import { currencies } from '../../constants/currencies';
+import { toastSuccess, toastError, getErrorMessage } from '../../utils/toast';
 import { navItems } from '../../constants/navItems';
 
 export default function BinderLayout() {
@@ -77,8 +78,11 @@ export default function BinderLayout() {
       });
       setBinder(updated);
       setEditOpen(false);
+      toastSuccess('Binder updated successfully');
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to update');
+      const message = getErrorMessage(err, 'Failed to update');
+      toastError(message);
+      setEditError(message);
     } finally {
       setEditSubmitting(false);
     }
@@ -115,14 +119,14 @@ export default function BinderLayout() {
               to={to}
               className={
                 navCollapsed
-                  ? `flex items-center justify-center px-0 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  ? `flex items-center justify-center p-1 text-sm font-medium rounded-full transition-colors ${
                       isActive
-                        ? 'text-primary'
+                        ? 'bg-background text-primary shadow'
                         : 'text-app-muted hover:text-app-text hover:bg-app-surface'
                     }`
                   : `flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-primary/10 text-primary'
+                        ? 'bg-background text-primary shadow'
                         : 'text-app-muted hover:text-app-text hover:bg-app-surface'
                     }`
               }
@@ -137,40 +141,42 @@ export default function BinderLayout() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-app-border bg-app-surface-secondary shrink-0 transition-all duration-300 ${
+        className={`hidden md:flex flex-col bg-app-surface-secondary shrink-0 transition-all duration-300 ${
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
         <div
-          className={`flex items-center h-16 border-b border-app-border ${
-            collapsed ? 'justify-center px-0' : 'gap-3 px-4'
-          }`}
+          className={`flex items-center h-16 ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'}`}
         >
-          <button
-            onClick={() => navigate('/')}
-            className="p-1.5 rounded-lg hover:bg-app-surface text-app-muted hover:text-app-text transition-colors"
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={() => navigate('/')}
             aria-label="Back to binders"
+            className="min-w-0 h-auto p-1.5 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface"
           >
             <ArrowLeftOnRectangleIcon width={18} />
-          </button>
+          </Button>
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
                 <h2 className="text-sm font-semibold truncate">{binder.name}</h2>
-                <button
-                  onClick={() => {
+                <Button
+                  isIconOnly
+                  variant="light"
+                  onPress={() => {
                     setEditName(binder.name);
                     setEditCurrency(binder.currency);
                     setEditOpen(true);
                   }}
-                  className="p-1 rounded-md hover:bg-app-surface text-app-muted hover:text-app-text transition-colors"
                   aria-label="Edit binder"
+                  className="min-w-0 h-auto p-1 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface"
                 >
                   <PencilIcon width={14} />
-                </button>
+                </Button>
               </div>
               <p className="text-xs text-app-muted">{binder.currency}</p>
             </div>
@@ -179,41 +185,43 @@ export default function BinderLayout() {
         <nav className={`flex-1 flex flex-col gap-1 ${collapsed ? 'p-2 items-center' : 'p-3'}`}>
           <NavItems collapsed={collapsed} />
         </nav>
-        <div className="border-t border-app-border p-3">
+        <div className="p-3">
           <div className={`flex ${collapsed ? 'flex-col items-center gap-2' : 'flex-col gap-1'}`}>
-            <button
-              onClick={toggle}
-              className={`flex items-center rounded-lg transition-colors text-app-muted hover:text-app-text hover:bg-app-surface ${
-                collapsed
-                  ? 'justify-center px-0 py-2.5'
-                  : 'gap-3 w-full px-3 py-2.5 text-sm font-medium'
-              }`}
+            <Button
+              variant="light"
+              onPress={toggle}
               aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              className={`flex items-center rounded-lg text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface ${
+                collapsed
+                  ? 'justify-center px-0 py-2.5 min-w-0 h-auto'
+                  : 'justify-start gap-3 w-full px-3 py-2.5 text-sm font-medium h-auto'
+              }`}
             >
               {theme === 'light' ? <MoonIcon width={22} /> : <SunIcon width={22} />}
               {!collapsed && <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>}
-            </button>
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className={`flex items-center rounded-lg transition-colors text-app-muted hover:text-app-text hover:bg-app-surface ${
-                collapsed
-                  ? 'justify-center px-0 py-2.5'
-                  : 'gap-3 w-full px-3 py-2.5 text-sm font-medium'
-              }`}
+            </Button>
+            <Button
+              variant="light"
+              onPress={() => setCollapsed(!collapsed)}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className={`flex items-center rounded-lg text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface ${
+                collapsed
+                  ? 'justify-center px-0 py-2.5 min-w-0 h-auto'
+                  : 'justify-start gap-3 w-full px-3 py-2.5 text-sm font-medium h-auto'
+              }`}
             >
               <ChevronLeftIcon
                 width={22}
                 className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
               />
               {!collapsed && <span>Collapse</span>}
-            </button>
+            </Button>
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <div className="flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet context={{ currency: binder.currency }} />
         </div>
@@ -221,15 +229,16 @@ export default function BinderLayout() {
 
       {/* Mobile bottom sheet drawer */}
       <div className="md:hidden">
-        <button
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white shadow-lg hover:opacity-90 transition-all active:scale-95 ${
+        <Button
+          isIconOnly
+          onPress={() => setDrawerOpen(!drawerOpen)}
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] w-12 h-12 rounded-full bg-primary text-white shadow-lg data-[hover=true]:opacity-90 transition-all active:scale-95 ${
             drawerOpen ? 'opacity-0 pointer-events-none' : ''
           }`}
           aria-label="Open navigation"
         >
           <Bars3Icon width={22} />
-        </button>
+        </Button>
 
         <div
           className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
@@ -240,7 +249,7 @@ export default function BinderLayout() {
       </div>
 
       {drawerOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-t border-app-border rounded-t-2xl shadow-xl safe-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 shadow-xl safe-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 bg-app-muted/40 rounded-full" />
           </div>
@@ -267,14 +276,15 @@ export default function BinderLayout() {
               );
             })}
 
-            <button
-              onClick={toggle}
-              className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium rounded-xl transition-colors text-app-muted hover:text-app-text hover:bg-app-surface"
+            <Button
+              variant="light"
+              onPress={toggle}
               aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium rounded-xl text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface h-auto min-w-0"
             >
               {theme === 'light' ? <MoonIcon width={22} /> : <SunIcon width={22} />}
               <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
-            </button>
+            </Button>
           </div>
         </div>
       )}

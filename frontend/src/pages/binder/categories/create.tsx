@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Input } from '@heroui/react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createCategory } from '../../../api/categories';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
 export default function CreateCategoryPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,9 +22,12 @@ export default function CreateCategoryPage() {
     setError('');
     try {
       await createCategory(id, { name: name.trim() });
+      toastSuccess('Category created successfully');
       navigate(`/binders/${id}/categories`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create category');
+      const message = getErrorMessage(err, 'Failed to create category');
+      toastError(message);
+      setError(message);
     } finally {
       setSubmitting(false);
     }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Input, Select, SelectItem } from '@heroui/react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createBinder } from '../../api/binders';
+import { toastSuccess, toastError, getErrorMessage } from '../../utils/toast';
 import { currencies } from '../../constants/currencies';
 
 export default function CreateBinder() {
@@ -32,9 +33,12 @@ export default function CreateBinder() {
         currency: currency || 'USD',
         description: description.trim() || undefined,
       });
+      toastSuccess('Binder created successfully');
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create binder');
+      const message = getErrorMessage(err, 'Failed to create binder');
+      toastError(message);
+      setError(message);
     } finally {
       setSubmitting(false);
     }

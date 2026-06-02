@@ -4,6 +4,7 @@ import { Button, Input, Spinner } from '@heroui/react';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { getTag, updateTag, deleteTag } from '../../../api/tags';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
 export default function EditTagPage() {
   const { id, tagId } = useParams<{ id: string; tagId: string }>();
@@ -40,9 +41,12 @@ export default function EditTagPage() {
     setError('');
     try {
       await updateTag(id, tagId, { name: name.trim(), color });
+      toastSuccess('Tag updated successfully');
       navigate(`/binders/${id}/tags`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update tag');
+      const message = getErrorMessage(err, 'Failed to update tag');
+      toastError(message);
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -54,9 +58,12 @@ export default function EditTagPage() {
     setError('');
     try {
       await deleteTag(id, tagId);
+      toastSuccess('Tag deleted successfully');
       navigate(`/binders/${id}/tags`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete tag');
+      const message = getErrorMessage(err, 'Failed to delete tag');
+      toastError(message);
+      setError(message);
       setDeleting(false);
     }
   }
@@ -104,7 +111,7 @@ export default function EditTagPage() {
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="h-10 w-16 cursor-pointer rounded-lg border border-app-border bg-transparent p-1"
+               className="h-10 w-16 cursor-pointer bg-transparent p-1"
             />
             <span className="text-sm font-mono text-app-muted">{color}</span>
           </div>

@@ -16,6 +16,7 @@ import { ArrowLeftIcon, PlusIcon, InformationCircleIcon } from '@heroicons/react
 import { getAccounts, type Account } from '../../../api/accounts';
 import { getPayees, createPayee, type Payee } from '../../../api/payees';
 import { createPaymentSchedule, previewScheduleDates } from '../../../api/payment-schedules';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
 export default function CreatePaymentSchedulePage() {
   const { id } = useParams<{ id: string }>();
@@ -97,7 +98,7 @@ export default function CreatePaymentSchedulePage() {
       setPayeeModalOpen(false);
       setNewPayeeName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create payee');
+      setError(getErrorMessage(err, 'Failed to create payee'));
     } finally {
       setCreatingPayee(false);
     }
@@ -134,9 +135,12 @@ export default function CreatePaymentSchedulePage() {
         notifyBefore: parseInt(notifyBefore) || 7,
         notifyType: notifyType as 'days' | 'weeks' | 'months',
       });
+      toastSuccess('Payment schedule created successfully');
       navigate(`/binders/${id}/payment-schedules`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create payment schedule');
+      const message = getErrorMessage(err, 'Failed to create payment schedule');
+      toastError(message);
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -378,13 +382,13 @@ export default function CreatePaymentSchedulePage() {
         </div>
 
         {previewDates.length > 0 && (
-          <div className="rounded-xl border border-app-border p-4">
+          <div className="p-4">
             <div className="flex items-center gap-1.5 mb-2">
               <p className="text-sm font-semibold">Upcoming dates</p>
               <Tooltip content="Past or today's dates will not show when saved." placement="right" closeDelay={0}>
-                <button type="button" className="inline-flex items-center text-app-muted hover:text-app-text transition-colors">
+                <Button isIconOnly variant="light" size="sm" className="min-w-0 h-auto p-0 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-transparent">
                   <InformationCircleIcon width={16} />
-                </button>
+                </Button>
               </Tooltip>
             </div>
             <div className="flex flex-wrap gap-2">

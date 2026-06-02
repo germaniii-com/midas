@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Input } from '@heroui/react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createTag } from '../../../api/tags';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
 export default function CreateTagPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,9 +23,12 @@ export default function CreateTagPage() {
     setError('');
     try {
       await createTag(id, { name: name.trim(), color });
+      toastSuccess('Tag created successfully');
       navigate(`/binders/${id}/tags`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create tag');
+      const message = getErrorMessage(err, 'Failed to create tag');
+      toastError(message);
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -65,7 +69,7 @@ export default function CreateTagPage() {
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="h-10 w-16 cursor-pointer rounded-lg border border-app-border bg-transparent p-1"
+               className="h-10 w-16 cursor-pointer bg-transparent p-1"
             />
             <span className="text-sm font-mono text-app-muted">{color}</span>
           </div>

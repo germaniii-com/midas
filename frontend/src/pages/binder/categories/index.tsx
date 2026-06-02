@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spinner } from '@heroui/react';
+import { Button, Card, CardBody, Spinner } from '@heroui/react';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { getCategories, type Category } from '../../../api/categories';
+import { getErrorMessage } from '../../../utils/toast';
 
 export default function CategoriesPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +20,7 @@ export default function CategoriesPage() {
       setCategories(data);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load categories');
+      setError(getErrorMessage(err, 'Failed to load categories'));
     } finally {
       setLoading(false);
     }
@@ -64,24 +65,26 @@ export default function CategoriesPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
-            <div
+            <Card
               key={category.id}
-              className="flex items-center gap-3 rounded-xl border border-app-border bg-app-surface-secondary p-4"
+              className="bg-app-surface-secondary"
             >
-              <span className="flex-1 truncate text-sm font-medium">
-                {category.name}
-              </span>
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                onPress={() =>
-                  navigate(`/binders/${id}/categories/${category.id}`)
-                }
-              >
-                <PencilIcon width={16} />
-              </Button>
-            </div>
+              <CardBody className="flex flex-row items-center gap-3">
+                <span className="flex-1 truncate text-sm font-medium">
+                  {category.name}
+                </span>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={() =>
+                    navigate(`/binders/${id}/categories/${category.id}`)
+                  }
+                >
+                  <PencilIcon width={16} />
+                </Button>
+              </CardBody>
+            </Card>
           ))}
         </div>
       )}

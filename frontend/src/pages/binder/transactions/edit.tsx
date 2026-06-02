@@ -6,6 +6,7 @@ import {
   Select,
   SelectItem,
   Spinner,
+  Checkbox,
   Modal,
   ModalContent,
   ModalHeader,
@@ -15,6 +16,7 @@ import {
 import { ArrowLeftIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 import { getAccounts, type Account } from '../../../api/accounts';
+import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import { getPayees, createPayee, type Payee } from '../../../api/payees';
 import { getTags, createTag, type Tag } from '../../../api/tags';
 import { getTransaction, updateTransaction, deleteTransaction } from '../../../api/transactions';
@@ -85,7 +87,7 @@ export default function EditTransactionPage() {
       setPayeeModalOpen(false);
       setNewPayeeName('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create payee');
+      setError(getErrorMessage(err, 'Failed to create payee'));
     } finally {
       setCreatingPayee(false);
     }
@@ -102,7 +104,7 @@ export default function EditTransactionPage() {
       setNewTagName('');
       setNewTagColor('#3B82F6');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create tag');
+      setError(getErrorMessage(err, 'Failed to create tag'));
     } finally {
       setCreatingTag(false);
     }
@@ -137,9 +139,12 @@ export default function EditTransactionPage() {
         isCleared,
         tagIds: Array.from(selectedTagIds),
       });
+      toastSuccess('Transaction updated successfully');
       navigate(`/binders/${id}/transactions`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update transaction');
+      const message = getErrorMessage(err, 'Failed to update transaction');
+      toastError(message);
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -151,9 +156,12 @@ export default function EditTransactionPage() {
     setError('');
     try {
       await deleteTransaction(id, transactionId);
+      toastSuccess('Transaction deleted successfully');
       navigate(`/binders/${id}/transactions`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete transaction');
+      const message = getErrorMessage(err, 'Failed to delete transaction');
+      toastError(message);
+      setError(message);
       setDeleting(false);
     }
   }
@@ -364,15 +372,9 @@ export default function EditTransactionPage() {
 
         <Input label="Notes" placeholder="Optional notes" value={notes} onValueChange={setNotes} />
 
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isCleared}
-            onChange={(e) => setIsCleared(e.target.checked)}
-            className="h-4 w-4 rounded border-app-border accent-primary"
-          />
-          <span className="text-sm">Cleared</span>
-        </label>
+        <Checkbox isSelected={isCleared} onValueChange={setIsCleared}>
+          Cleared
+        </Checkbox>
 
         {error && <p className="text-danger text-sm">{error}</p>}
 
@@ -444,7 +446,7 @@ export default function EditTransactionPage() {
                   type="color"
                   value={newTagColor}
                   onChange={(e) => setNewTagColor(e.target.value)}
-                  className="h-10 w-16 cursor-pointer rounded-lg border border-app-border bg-transparent p-1"
+                   className="h-10 w-16 cursor-pointer bg-transparent p-1"
                 />
                 <span className="text-sm font-mono text-app-muted">{newTagColor}</span>
               </div>
