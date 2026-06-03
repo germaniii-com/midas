@@ -5,6 +5,7 @@ import { PlusIcon, PencilIcon, ArrowLeftIcon, CheckIcon } from '@heroicons/react
 import { getTransactions, updateTransaction, type Transaction } from '../../../api/transactions';
 import { getPayees, type Payee } from '../../../api/payees';
 import { getUpcomingSchedules, paySchedule, type UpcomingSchedule } from '../../../api/payment-schedules';
+import { getAccounts, type Account } from '../../../api/accounts';
 import { formatCurrency, formatDate, useBinderCurrency } from '../../../utils/format';
 import { usePreferences } from '../../../hooks/usePreferences';
 import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
@@ -27,14 +28,26 @@ export default function TransactionsPage() {
   const [editingDateValue, setEditingDateValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const currency = useBinderCurrency();
+  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingSchedule[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
 
   async function fetchUpcoming() {
-    if (!id || categoryId) return;
+    if (!id) return;
     try {
-      const data = await getUpcomingSchedules(id);
-      setUpcoming(data);
+      const [data, accts] = await Promise.all([
+        getUpcomingSchedules(id),
+        categoryId ? getAccounts(id) : Promise.resolve(null),
+      ]);
+      if (categoryId && accts) {
+        const accountIds = new Set(
+          accts.accounts.filter((a) => a.categories.some((c) => c.id === categoryId)).map((a) => a.id),
+        );
+        setAllAccounts(accts.accounts);
+        setUpcoming(data.filter((u) => accountIds.has(u.schedule.accountId)));
+      } else {
+        setUpcoming(data);
+      }
     } catch {}
   }
 
@@ -44,8 +57,7 @@ export default function TransactionsPage() {
     try {
       await paySchedule(id, scheduleId);
       toastSuccess('Payment applied');
-      setUpcoming((prev) => prev.filter((u) => u.schedule.id !== scheduleId));
-      fetchTransactions();
+      await Promise.all([fetchTransactions(), fetchUpcoming()]);
     } catch {
       toastError('Failed to pay schedule');
       setError('Failed to pay schedule');
@@ -200,7 +212,7 @@ export default function TransactionsPage() {
 
       {error && <p className="text-danger text-sm mb-4">{error}</p>}
 
-      {upcoming.length > 0 && !categoryId && (
+      {upcoming.length > 0 && (
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-3">Upcoming Payments</h2>
           <Table
