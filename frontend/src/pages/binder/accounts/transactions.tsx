@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
-import { PlusIcon, ArrowLeftIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowLeftIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { getAccount, type Account } from '../../../api/accounts';
 import { getTransactions, updateTransaction, type Transaction } from '../../../api/transactions';
 import { getPayees, type Payee } from '../../../api/payees';
+import { getUpcomingSchedules, paySchedule, type UpcomingSchedule } from '../../../api/payment-schedules';
 import { formatCurrency, useBinderCurrency } from '../../../utils/format';
 import { formatDate } from '../../../utils/format';
 import { usePreferences } from '../../../hooks/usePreferences';
@@ -25,6 +26,36 @@ export default function AccountTransactionsPage() {
   const [editingDateValue, setEditingDateValue] = useState('');
   const currency = useBinderCurrency();
   const { dateFormat, numberLocale } = usePreferences();
+  const [upcoming, setUpcoming] = useState<UpcomingSchedule[]>([]);
+  const [payingId, setPayingId] = useState<string | null>(null);
+
+  async function fetchUpcoming() {
+    if (!id || !accountId) return;
+    try {
+      const data = await getUpcomingSchedules(id);
+      setUpcoming(data.filter((u) => u.schedule.accountId === accountId));
+    } catch {}
+  }
+
+  async function handlePaySchedule(scheduleId: string) {
+    if (!id || !accountId) return;
+    setPayingId(scheduleId);
+    try {
+      await paySchedule(id, scheduleId);
+      toastSuccess('Payment applied');
+      const [txs, upcomingData] = await Promise.all([
+        getTransactions(id, accountId),
+        getUpcomingSchedules(id),
+      ]);
+      setTransactions(txs);
+      setUpcoming(upcomingData.filter((u) => u.schedule.accountId === accountId));
+    } catch {
+      toastError('Failed to pay schedule');
+      setError('Failed to pay schedule');
+    } finally {
+      setPayingId(null);
+    }
+  }
 
   async function handleSaveAmount(transactionId: string) {
     if (!id) return;
@@ -101,11 +132,12 @@ export default function AccountTransactionsPage() {
   useEffect(() => {
     if (!id || !accountId) return;
     setLoading(true);
-    Promise.all([getAccount(id, accountId), getTransactions(id, accountId), getPayees(id)])
-      .then(([acc, txs, p]) => {
+    Promise.all([getAccount(id, accountId), getTransactions(id, accountId), getPayees(id), getUpcomingSchedules(id)])
+      .then(([acc, txs, p, upcomingData]) => {
         setAccount(acc);
         setTransactions(txs);
         setPayees(p);
+        setUpcoming(upcomingData.filter((u) => u.schedule.accountId === accountId));
         setError('');
       })
       .catch((err) => {
@@ -165,6 +197,81 @@ export default function AccountTransactionsPage() {
       </div>
 
       {error && <p className="text-danger text-sm mb-4">{error}</p>}
+
+      {upcoming.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Upcoming Payments</h2>
+          <Table aria-label="Upcoming payments">
+            <TableHeader>
+              <TableColumn key="due">Due</TableColumn>
+              <TableColumn key="schedule">Schedule</TableColumn>
+              <TableColumn key="payee">Payee</TableColumn>
+              <TableColumn key="amount" align="end">Amount</TableColumn>
+              <TableColumn key="action" hideHeader>Action</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {upcoming.map((u) => {
+                const amt = parseFloat(u.schedule.amount);
+                const statusColors: Record<string, string> = {
+                  overdue: 'text-danger',
+                  due_soon: 'text-warning',
+                  upcoming: '',
+                };
+                const statusLabels: Record<string, string> = {
+                  overdue: 'Overdue',
+                  due_soon: 'Due soon',
+                  upcoming: 'Upcoming',
+                };
+                const daysText = u.occurrence.daysUntilDue < 0
+                  ? `${Math.abs(u.occurrence.daysUntilDue)} day${Math.abs(u.occurrence.daysUntilDue) !== 1 ? 's' : ''} ago`
+                  : u.occurrence.daysUntilDue === 0
+                    ? 'Today'
+                    : `In ${u.occurrence.daysUntilDue} day${u.occurrence.daysUntilDue !== 1 ? 's' : ''}`;
+
+                return (
+                  <TableRow key={u.schedule.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${statusColors[u.occurrence.status] || ''}`}>
+                          {formatDate(u.occurrence.dueDate, dateFormat)}
+                        </span>
+                        <span className={`text-xs ${statusColors[u.occurrence.status] || ''}`}>
+                          ({daysText})
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-block mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                          statusColors[u.occurrence.status] || 'text-default-500'
+                        }`}
+                      >
+                        {statusLabels[u.occurrence.status] || ''}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium">{u.schedule.name}</TableCell>
+                    <TableCell>{u.schedule.payeeName || '—'}</TableCell>
+                    <TableCell className="text-right font-semibold tabular-nums text-danger">
+                      -{formatCurrency(Math.abs(amt), currency, numberLocale)}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        isLoading={payingId === u.schedule.id}
+                        isDisabled={payingId !== null}
+                        onPress={() => handlePaySchedule(u.schedule.id)}
+                        startContent={<CheckIcon width={14} />}
+                      >
+                        Pay
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {transactions.length === 0 ? (
         <div className="text-center py-16">
