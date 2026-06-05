@@ -27,7 +27,7 @@ export interface UpcomingScheduleOccurrence {
   dueDate: string;
   occurrenceIndex: number;
   daysUntilDue: number;
-  status: 'upcoming' | 'due_soon' | 'overdue';
+  status: 'upcoming' | 'due_soon' | 'overdue' | 'missed';
 }
 
 export interface UpcomingSchedule {

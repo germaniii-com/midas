@@ -81,6 +81,7 @@ export function computeNextOccurrences(
   rule: ScheduleRule,
   paidDates: string[],
   count: number = 10,
+  options?: { includePast?: boolean },
 ): Occurrence[] {
   const startDate = parseISO(rule.startDate);
   const today = new Date();
@@ -101,7 +102,7 @@ export function computeNextOccurrences(
 
       for (const candidate of candidates) {
         if (results.length >= count) break;
-        if (isBefore(candidate, today)) continue;
+        if (!options?.includePast && isBefore(candidate, today)) continue;
 
         const adjusted = applyWeekendAdjustment(candidate, rule.weekendAdjustment);
         const dateStr = format(adjusted, 'yyyy-MM-dd');
@@ -133,7 +134,7 @@ export function computeNextOccurrences(
       const candidates = getSpecificDatesInWeek(year, month, dayOfMonth, rule.specificDays);
       for (const candidate of candidates) {
         if (results.length >= count) break;
-        if (isBefore(candidate, today)) continue;
+        if (!options?.includePast && isBefore(candidate, today)) continue;
 
         const adjusted = applyWeekendAdjustment(candidate, rule.weekendAdjustment);
         const dateStr = format(adjusted, 'yyyy-MM-dd');
@@ -157,7 +158,7 @@ export function computeNextOccurrences(
     let currentDate = startDate;
     while (results.length < count && maxIterations > 0) {
       maxIterations--;
-      if (isBefore(currentDate, today)) {
+      if (!options?.includePast && isBefore(currentDate, today)) {
         currentDate = advanceDate(currentDate, rule);
         if (rule.endType === 'date' && rule.endDate && isBefore(currentDate, parseISO(rule.endDate)) === false) break;
         continue;

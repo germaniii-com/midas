@@ -50,7 +50,7 @@ interface PayScheduleBody {
   isExpense?: boolean;
 }
 
-function computeScheduleStatus(dueDate: string): 'overdue' | 'due_soon' | 'upcoming' {
+function computeScheduleStatus(dueDate: string): 'overdue' | 'due_soon' | 'upcoming' | 'missed' {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate + 'T00:00:00');
@@ -362,7 +362,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         weekendAdjustment: schedule.weekendAdjustment as ScheduleRule['weekendAdjustment'],
       };
 
-      const nextOccurrences = computeNextOccurrences(rule, paidDates, 1);
+      const nextOccurrences = computeNextOccurrences(rule, paidDates, 1, { includePast: true });
       if (nextOccurrences.length === 0) {
         return reply.status(400).send({ error: 'No upcoming occurrences to pay' });
       }
@@ -468,13 +468,6 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         };
 
         const paidDates = paidDatesBySchedule[schedule.id] || [];
-        const nextUpcoming = computeNextOccurrences(rule, paidDates, 1);
-        if (nextUpcoming.length === 0) continue;
-
-        const occ = nextUpcoming[0];
-        const dueDate = new Date(occ.dueDate + 'T00:00:00');
-        const diffTime = dueDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         const notifyDays = schedule.notifyBefore;
         let notifyTypeMultiplier = 1;
@@ -482,35 +475,55 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         else if (schedule.notifyType === 'months') notifyTypeMultiplier = 30;
         const effectiveNotifyDays = notifyDays * notifyTypeMultiplier;
 
-        if (diffDays > effectiveNotifyDays) continue;
+        const scheduleInfo = {
+          id: schedule.id,
+          name: schedule.name,
+          accountId: schedule.accountId,
+          accountName: schedule.accountName,
+          payeeId: schedule.payeeId,
+          payeeName: schedule.payeeName,
+          amount: schedule.amount,
+        };
 
-        const status = computeScheduleStatus(occ.dueDate);
+        const allUnpaid = computeNextOccurrences(rule, paidDates, 100, { includePast: true });
 
-        results.push({
-          schedule: {
-            id: schedule.id,
-            name: schedule.name,
-            accountId: schedule.accountId,
-            accountName: schedule.accountName,
-            payeeId: schedule.payeeId,
-            payeeName: schedule.payeeName,
-            amount: schedule.amount,
-          },
-          occurrence: {
-            dueDate: occ.dueDate,
-            occurrenceIndex: occ.occurrenceIndex,
-            daysUntilDue: diffDays,
-            status,
-          },
-        });
+        for (const occ of allUnpaid) {
+          const dueDateTime = new Date(occ.dueDate + 'T00:00:00').getTime();
+          const diffDays = Math.ceil((dueDateTime - today.getTime()) / (1000 * 60 * 60 * 24));
+
+          if (diffDays < 0) {
+            results.push({
+              schedule: scheduleInfo,
+              occurrence: {
+                dueDate: occ.dueDate,
+                occurrenceIndex: occ.occurrenceIndex,
+                daysUntilDue: diffDays,
+                status: 'missed' as const,
+              },
+            });
+          } else {
+            if (diffDays > effectiveNotifyDays) continue;
+            const status = computeScheduleStatus(occ.dueDate);
+            results.push({
+              schedule: scheduleInfo,
+              occurrence: {
+                dueDate: occ.dueDate,
+                occurrenceIndex: occ.occurrenceIndex,
+                daysUntilDue: diffDays,
+                status,
+              },
+            });
+            break;
+          }
+        }
       }
 
       results.sort((a, b) => {
-        const statusOrder: Record<string, number> = { overdue: 0, due_soon: 1, upcoming: 2 };
-        const aOrder = statusOrder[a.occurrence.status] ?? 3;
-        const bOrder = statusOrder[b.occurrence.status] ?? 3;
+        const statusOrder: Record<string, number> = { missed: 0, overdue: 1, due_soon: 2, upcoming: 3 };
+        const aOrder = statusOrder[a.occurrence.status] ?? 4;
+        const bOrder = statusOrder[b.occurrence.status] ?? 4;
         if (aOrder !== bOrder) return aOrder - bOrder;
-        return a.occurrence.daysUntilDue - b.occurrence.daysUntilDue;
+        return b.occurrence.daysUntilDue - a.occurrence.daysUntilDue;
       });
 
       return reply.send(results);

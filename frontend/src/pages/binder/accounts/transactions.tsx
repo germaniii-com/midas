@@ -200,7 +200,7 @@ export default function AccountTransactionsPage() {
 
       {upcoming.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-3">Upcoming Payments</h2>
+          <h2 className="text-lg font-semibold mb-3">Scheduled Payments</h2>
           <Table aria-label="Upcoming payments">
             <TableHeader>
               <TableColumn key="due">Due</TableColumn>
@@ -213,11 +213,13 @@ export default function AccountTransactionsPage() {
               {upcoming.map((u) => {
                 const amt = parseFloat(u.schedule.amount);
                 const statusColors: Record<string, string> = {
+                  missed: 'text-danger',
                   overdue: 'text-danger',
                   due_soon: 'text-warning',
                   upcoming: '',
                 };
                 const statusLabels: Record<string, string> = {
+                  missed: 'Missed',
                   overdue: 'Overdue',
                   due_soon: 'Due soon',
                   upcoming: 'Upcoming',
@@ -229,7 +231,7 @@ export default function AccountTransactionsPage() {
                     : `In ${u.occurrence.daysUntilDue} day${u.occurrence.daysUntilDue !== 1 ? 's' : ''}`;
 
                 return (
-                  <TableRow key={u.schedule.id}>
+                  <TableRow key={`${u.schedule.id}-${u.occurrence.dueDate}`}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className={`font-medium ${statusColors[u.occurrence.status] || ''}`}>
