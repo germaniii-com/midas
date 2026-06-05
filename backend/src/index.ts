@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { binderRoutes } from './routes/binders';
 import { binderIORoutes } from './routes/binder-io';
+import { actualImportRoutes } from './routes/actual-import';
 import { tagRoutes } from './routes/tags';
 import { categoryRoutes } from './routes/categories';
 import { accountRoutes } from './routes/accounts';
@@ -27,6 +28,7 @@ async function routes(app: FastifyInstance) {
   });
   app.register(binderRoutes);
   app.register(binderIORoutes);
+  app.register(actualImportRoutes);
   app.register(tagRoutes);
   app.register(categoryRoutes);
   app.register(accountRoutes);

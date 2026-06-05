@@ -109,3 +109,23 @@ export async function importBinder(
   }
   return res.json();
 }
+
+export async function importActualBinder(
+  file: File,
+  data: ImportBinderData,
+): Promise<Binder> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('password', data.password);
+  if (data.name) formData.append('name', data.name);
+  if (data.currency) formData.append('currency', data.currency);
+  const res = await fetch(`${API_URL}/api/binders/import-actual`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to import binder' }));
+    throw new Error(err.error || 'Failed to import binder');
+  }
+  return res.json();
+}

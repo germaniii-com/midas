@@ -19,7 +19,8 @@
     "drizzle-orm": "^0.45.2",
     "fastify": "^4.29.1",
     "pg": "^8.21.0",
-    "postgres": "^3.4.4"
+    "postgres": "^3.4.4",
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

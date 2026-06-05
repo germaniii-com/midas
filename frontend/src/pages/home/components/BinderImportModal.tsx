@@ -12,7 +12,7 @@ import {
   SelectItem,
 } from '@heroui/react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { importBinder } from '../../../api/binders';
+import { importBinder, importActualBinder } from '../../../api/binders';
 import { currencies } from '../../../constants/currencies';
 import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 
@@ -21,8 +21,16 @@ interface BinderImportModalProps {
   onClose: () => void;
 }
 
+const IMPORT_TYPES = [
+  { value: 'native', label: 'Native (.sql)' },
+  { value: 'actual', label: 'Actual Budget (.sqlite)' },
+] as const;
+
+type ImportType = (typeof IMPORT_TYPES)[number]['value'];
+
 export default function BinderImportModal({ isOpen, onClose }: BinderImportModalProps) {
   const navigate = useNavigate();
+  const [importType, setImportType] = useState<ImportType>('native');
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -37,6 +45,13 @@ export default function BinderImportModal({ isOpen, onClose }: BinderImportModal
     if (!f) return;
     setFile(f);
     setError('');
+
+    if (importType === 'actual') {
+      setName('');
+      setDescription('');
+      setCurrency('USD');
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -63,7 +78,8 @@ export default function BinderImportModal({ isOpen, onClose }: BinderImportModal
     setImporting(true);
     setError('');
     try {
-      const binder = await importBinder(file, {
+      const fn = importType === 'actual' ? importActualBinder : importBinder;
+      const binder = await fn(file, {
         name: name || undefined,
         password,
         description: description || undefined,
@@ -90,6 +106,7 @@ export default function BinderImportModal({ isOpen, onClose }: BinderImportModal
     setShowPassword(false);
     setError('');
     setImporting(false);
+    setImportType('native');
     onClose();
   }
 
@@ -100,12 +117,35 @@ export default function BinderImportModal({ isOpen, onClose }: BinderImportModal
         <ModalBody className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-foreground">File</label>
-            <input
-              type="file"
-              accept=".sql"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white file:cursor-pointer cursor-pointer"
-            />
+            <div className="flex gap-2 items-end">
+              <input
+                type="file"
+                accept={importType === 'actual' ? '.sqlite' : '.sql'}
+                onChange={handleFileChange}
+                className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white file:cursor-pointer cursor-pointer"
+              />
+              <Select
+                aria-label="Import type"
+                selectedKeys={[importType]}
+                onSelectionChange={(keys) => {
+                  const val = Array.from(keys)[0] as ImportType | undefined;
+                  if (val && val !== importType) {
+                    setImportType(val);
+                    setFile(null);
+                    setName('');
+                    setDescription('');
+                    setCurrency('USD');
+                    setError('');
+                  }
+                }}
+                className="w-44"
+                size="sm"
+              >
+                {IMPORT_TYPES.map((t) => (
+                  <SelectItem key={t.value}>{t.label}</SelectItem>
+                ))}
+              </Select>
+            </div>
           </div>
           <Input
             label="Name"
