@@ -17,6 +17,8 @@ export default function AccountTransactionsPage() {
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
   const [payees, setPayees] = useState<Payee[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,10 +46,11 @@ export default function AccountTransactionsPage() {
       await paySchedule(id, scheduleId);
       toastSuccess('Payment applied');
       const [txs, upcomingData] = await Promise.all([
-        getTransactions(id, accountId),
+        getTransactions(id, accountId, undefined, 50, 0),
         getUpcomingSchedules(id),
       ]);
       setTransactions(txs);
+      setHasMore(txs.length === 50);
       setUpcoming(upcomingData.filter((u) => u.schedule.accountId === accountId));
     } catch {
       toastError('Failed to pay schedule');
@@ -129,13 +132,29 @@ export default function AccountTransactionsPage() {
     setEditingDateTxId(null);
   }
 
+  async function loadMore() {
+    if (!id || !accountId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await getTransactions(id, accountId, undefined, 50, transactions.length);
+      setTransactions((prev) => [...prev, ...data]);
+      setHasMore(data.length === 50);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to load more transactions'));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   useEffect(() => {
     if (!id || !accountId) return;
     setLoading(true);
-    Promise.all([getAccount(id, accountId), getTransactions(id, accountId), getPayees(id), getUpcomingSchedules(id)])
+    setHasMore(true);
+    Promise.all([getAccount(id, accountId), getTransactions(id, accountId, undefined, 50, 0), getPayees(id), getUpcomingSchedules(id)])
       .then(([acc, txs, p, upcomingData]) => {
         setAccount(acc);
         setTransactions(txs);
+        setHasMore(txs.length === 50);
         setPayees(p);
         setUpcoming(upcomingData.filter((u) => u.schedule.accountId === accountId));
         setError('');
@@ -281,140 +300,155 @@ export default function AccountTransactionsPage() {
           <p className="text-app-muted text-sm">Add your first transaction to this account.</p>
         </div>
       ) : (
-        <Table
-          aria-label="Account transactions"
-          onRowAction={(key) => {
-            if (window.innerWidth < 640) {
-              navigate(`/binders/${id}/transactions/${key}`);
-            }
-          }}
-        >
-          <TableHeader>
-            <TableColumn key="date">Date</TableColumn>
-            <TableColumn key="payee">Payee</TableColumn>
-            <TableColumn key="amount" align="end">Amount</TableColumn>
-            <TableColumn key="actions" hideHeader className="hidden sm:table-cell">Actions</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((tx) => {
-              const amt = parseFloat(tx.amount);
-              const isEditing = editingId === tx.id;
-              return (
-                <TableRow
-                  key={tx.id}
-                  className={`${!tx.isCleared ? 'opacity-40' : ''}`}
-                >
-                  <TableCell>
-                    {editingDateTxId === tx.id ? (
-                      <input
-                        type="date"
-                        value={editingDateValue}
-                        onChange={(e) => setEditingDateValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveDate(tx.id);
-                          else if (e.key === 'Escape') setEditingDateTxId(null);
-                        }}
-                        onBlur={() => setEditingDateTxId(null)}
-                        className="rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        className="sm:cursor-pointer"
-                        onClick={(e) => {
-                          if (window.innerWidth < 640) return;
-                          e.stopPropagation();
-                          setEditingDateTxId(tx.id);
-                          setEditingDateValue(tx.date);
-                        }}
-                      >
-                        {formatDate(tx.date, dateFormat)}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {tx.transferAccountName ? (
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-xs text-default-500 font-medium uppercase tracking-wider">
-                          Transfer -
+        <>
+          <Table
+            aria-label="Account transactions"
+            onRowAction={(key) => {
+              if (window.innerWidth < 640) {
+                navigate(`/binders/${id}/transactions/${key}`);
+              }
+            }}
+          >
+            <TableHeader>
+              <TableColumn key="date">Date</TableColumn>
+              <TableColumn key="payee">Payee</TableColumn>
+              <TableColumn key="amount" align="end">Amount</TableColumn>
+              <TableColumn key="actions" hideHeader className="hidden sm:table-cell">Actions</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((tx) => {
+                const amt = parseFloat(tx.amount);
+                const isEditing = editingId === tx.id;
+                return (
+                  <TableRow
+                    key={tx.id}
+                    className={`${!tx.isCleared ? 'opacity-40' : ''}`}
+                  >
+                    <TableCell>
+                      {editingDateTxId === tx.id ? (
+                        <input
+                          type="date"
+                          value={editingDateValue}
+                          onChange={(e) => setEditingDateValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveDate(tx.id);
+                            else if (e.key === 'Escape') setEditingDateTxId(null);
+                          }}
+                          onBlur={() => setEditingDateTxId(null)}
+                          className="rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className="sm:cursor-pointer"
+                          onClick={(e) => {
+                            if (window.innerWidth < 640) return;
+                            e.stopPropagation();
+                            setEditingDateTxId(tx.id);
+                            setEditingDateValue(tx.date);
+                          }}
+                        >
+                          {formatDate(tx.date, dateFormat)}
                         </span>
-                        <span className="font-medium">{tx.transferAccountName}</span>
-                      </span>
-                    ) : editingPayeeTxId === tx.id ? (
-                      <select
-                        value={tx.payeeId ?? ''}
-                        onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}
-                        onBlur={() => setEditingPayeeTxId(null)}
-                        autoFocus
-                        className="max-w-32 rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {tx.transferAccountName ? (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-xs text-default-500 font-medium uppercase tracking-wider">
+                            Transfer -
+                          </span>
+                          <span className="font-medium">{tx.transferAccountName}</span>
+                        </span>
+                      ) : editingPayeeTxId === tx.id ? (
+                        <select
+                          value={tx.payeeId ?? ''}
+                          onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}
+                          onBlur={() => setEditingPayeeTxId(null)}
+                          autoFocus
+                          className="max-w-32 rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
+                        >
+                          <option value="">—</option>
+                          {payees.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className="sm:cursor-pointer"
+                          onClick={(e) => {
+                            if (window.innerWidth < 640) return;
+                            e.stopPropagation();
+                            setEditingPayeeTxId(tx.id);
+                          }}
+                        >
+                          {tx.payeeName || '—'}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className={`text-right font-semibold tabular-nums ${amt >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveAmount(tx.id);
+                            } else if (e.key === 'Escape') {
+                              setEditingId(null);
+                            }
+                          }}
+                          onBlur={() => setEditingId(null)}
+                          className="w-28 rounded border border-primary bg-transparent px-2 py-1 text-right text-sm font-semibold tabular-nums outline-none"
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className="cursor-pointer sm:cursor-text"
+                          onClick={(e) => {
+                            if (window.innerWidth < 640) return;
+                            e.stopPropagation();
+                            setEditingId(tx.id);
+                            setEditingValue(tx.amount);
+                          }}
+                        >
+                          {amt >= 0 ? '+' : ''}
+                          {formatCurrency(amt, currency, numberLocale)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        onPress={() => navigate(`/binders/${id}/transactions/${tx.id}`)}
                       >
-                        <option value="">—</option>
-                        {payees.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span
-                        className="sm:cursor-pointer"
-                        onClick={(e) => {
-                          if (window.innerWidth < 640) return;
-                          e.stopPropagation();
-                          setEditingPayeeTxId(tx.id);
-                        }}
-                      >
-                        {tx.payeeName || '—'}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className={`text-right font-semibold tabular-nums ${amt >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleSaveAmount(tx.id);
-                          } else if (e.key === 'Escape') {
-                            setEditingId(null);
-                          }
-                        }}
-                        onBlur={() => setEditingId(null)}
-                        className="w-28 rounded border border-primary bg-transparent px-2 py-1 text-right text-sm font-semibold tabular-nums outline-none"
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        className="cursor-pointer sm:cursor-text"
-                        onClick={(e) => {
-                          if (window.innerWidth < 640) return;
-                          e.stopPropagation();
-                          setEditingId(tx.id);
-                          setEditingValue(tx.amount);
-                        }}
-                      >
-                        {amt >= 0 ? '+' : ''}
-                        {formatCurrency(amt, currency, numberLocale)}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Button
-                      isIconOnly
-                      variant="light"
-                      size="sm"
-                      onPress={() => navigate(`/binders/${id}/transactions/${tx.id}`)}
-                    >
-                      <PencilIcon width={15} />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                        <PencilIcon width={15} />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {hasMore && (
+            <div className="flex justify-center mt-6">
+              <Button
+                variant="flat"
+                color="primary"
+                isLoading={loadingMore}
+                isDisabled={loadingMore}
+                onPress={loadMore}
+              >
+                Load More
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -60,10 +60,14 @@ export async function getTransactions(
   binderId: string,
   accountId?: string,
   categoryId?: string,
+  limit?: number,
+  offset?: number,
 ): Promise<Transaction[]> {
   const params = new URLSearchParams();
   if (accountId) params.set('accountId', accountId);
   if (categoryId) params.set('categoryId', categoryId);
+  if (limit !== undefined) params.set('limit', String(limit));
+  if (offset !== undefined) params.set('offset', String(offset));
   const qs = params.toString();
   const res = await fetch(
     `${API_URL}/api/binders/${binderId}/transactions${qs ? `?${qs}` : ''}`,

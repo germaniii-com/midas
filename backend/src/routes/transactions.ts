@@ -32,11 +32,16 @@ function flipAmount(amount: string): string {
 }
 
 export async function transactionRoutes(app: FastifyInstance) {
-  app.get<{ Params: { id: string }; Querystring: { accountId?: string; categoryId?: string } }>(
+  app.get<{
+    Params: { id: string };
+    Querystring: { accountId?: string; categoryId?: string; limit?: string; offset?: string };
+  }>(
     '/binders/:id/transactions',
     async (req, reply) => {
       const { id } = req.params;
-      const { accountId, categoryId } = req.query;
+      const { accountId, categoryId, limit: limitStr, offset: offsetStr } = req.query;
+      const limit = Math.min(Math.max(parseInt(limitStr || '50') || 50, 1), 500);
+      const offset = Math.max(parseInt(offsetStr || '0') || 0, 0);
 
       const filters = [eq(transactions.binderId, id)];
       if (accountId) filters.push(eq(transactions.accountId, accountId));
@@ -75,6 +80,8 @@ export async function transactionRoutes(app: FastifyInstance) {
         .leftJoin(counterpartTx, eq(transactions.transferId, counterpartTx.id))
         .leftJoin(transferAccount, eq(counterpartTx.accountId, transferAccount.id))
         .where(and(...filters))
+        .limit(limit)
+        .offset(offset)
         .orderBy(sql`${transactions.date} DESC, ${transactions.createdAt} DESC`);
 
       if (rows.length === 0) return reply.send([]);
