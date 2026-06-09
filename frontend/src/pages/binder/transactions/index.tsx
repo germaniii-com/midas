@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
+import { Button, Card, CardBody, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
 import { PlusIcon, PencilIcon, ArrowLeftIcon, CheckIcon, PaperClipIcon } from '@heroicons/react/24/outline';
 import { getTransactions, updateTransaction, type Transaction } from '../../../api/transactions';
 import { getPayees, type Payee } from '../../../api/payees';
@@ -317,157 +317,196 @@ export default function TransactionsPage() {
         </div>
       ) : (
         <>
-          <Table
-            aria-label="Transactions"
-            onRowAction={(key) => {
-              if (window.innerWidth < 640) {
+          <div className="hidden sm:block">
+            <Table
+              aria-label="Transactions"
+              onRowAction={(key) => {
                 navigate(`/binders/${id}/transactions/${key}`);
-              }
-            }}
-          >
-            <TableHeader>
-              <TableColumn key="date">Date</TableColumn>
-              <TableColumn key="account">Account</TableColumn>
-              <TableColumn key="payee">Payee</TableColumn>
-              <TableColumn key="amount" align="end">Amount</TableColumn>
-              <TableColumn key="actions" hideHeader className="hidden sm:table-cell">Actions</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((tx) => {
-                const amt = parseFloat(tx.amount);
-                const isEditing = editingId === tx.id;
-                return (
-                  <TableRow
-                    key={tx.id}
-                    className={`${!tx.isCleared ? 'opacity-40' : ''}`}
-                  >
-                    <TableCell>
-                      {editingDateTxId === tx.id ? (
-                        <input
-                          type="date"
-                          value={editingDateValue}
-                          onChange={(e) => setEditingDateValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveDate(tx.id);
-                            else if (e.key === 'Escape') setEditingDateTxId(null);
-                          }}
-                          onBlur={() => setEditingDateTxId(null)}
-                          className="rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
-                          autoFocus
-                        />
-                      ) : (
-                        <span
-                          className="sm:cursor-pointer"
-                          onClick={(e) => {
-                            if (window.innerWidth < 640) return;
-                            e.stopPropagation();
-                            setEditingDateTxId(tx.id);
-                            setEditingDateValue(tx.date);
-                          }}
+              }}
+            >
+              <TableHeader>
+                <TableColumn key="date">Date</TableColumn>
+                <TableColumn key="account">Account</TableColumn>
+                <TableColumn key="payee">Payee</TableColumn>
+                <TableColumn key="amount" align="end">Amount</TableColumn>
+                <TableColumn key="actions" hideHeader>Actions</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((tx) => {
+                  const amt = parseFloat(tx.amount);
+                  const isEditing = editingId === tx.id;
+                  return (
+                    <TableRow
+                      key={tx.id}
+                      className={`${!tx.isCleared ? 'opacity-40' : ''}`}
+                    >
+                      <TableCell>
+                        {editingDateTxId === tx.id ? (
+                          <input
+                            type="date"
+                            value={editingDateValue}
+                            onChange={(e) => setEditingDateValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveDate(tx.id);
+                              else if (e.key === 'Escape') setEditingDateTxId(null);
+                            }}
+                            onBlur={() => setEditingDateTxId(null)}
+                            className="rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            className="sm:cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingDateTxId(tx.id);
+                              setEditingDateValue(tx.date);
+                            }}
+                          >
+                            {formatDate(tx.date, dateFormat)}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <span>{tx.accountName}</span>
+                          {tx.attachmentCount && tx.attachmentCount > 0 ? (
+                            <span className="inline-flex items-center gap-0.5 text-xs text-default-400">
+                              <PaperClipIcon width={12} />
+                              {tx.attachmentCount}
+                            </span>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {tx.transferAccountName ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-xs text-default-500 font-medium uppercase tracking-wider">
+                              TRANSFER
+                            </span>
+                            <span className="mx-1 text-default-500">—</span>
+                            <span className="font-medium">{tx.transferAccountName}</span>
+                          </span>
+                        ) : editingPayeeTxId === tx.id ? (
+                          <select
+                            value={tx.payeeId ?? ''}
+                            onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}
+                            onBlur={() => setEditingPayeeTxId(null)}
+                            autoFocus
+                            className="max-w-32 rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
+                          >
+                            <option value="">—</option>
+                            {payees.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            className="sm:cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingPayeeTxId(tx.id);
+                            }}
+                          >
+                            {tx.payeeName || '—'}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className={`text-right font-semibold tabular-nums ${amt >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {isEditing ? (
+                          <input
+                            ref={inputRef}
+                            type="text"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveAmount(tx.id);
+                              } else if (e.key === 'Escape') {
+                                setEditingId(null);
+                              }
+                            }}
+                            onBlur={() => setEditingId(null)}
+                            className="w-28 rounded border border-primary bg-transparent px-2 py-1 text-right text-sm font-semibold tabular-nums outline-none"
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            className="cursor-pointer sm:cursor-text"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(tx.id);
+                              setEditingValue(tx.amount);
+                              requestAnimationFrame(() => inputRef.current?.focus());
+                            }}
+                          >
+                            {amt >= 0 ? '+' : ''}
+                            {formatCurrency(amt, currency, numberLocale)}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          size="sm"
+                          onPress={() => navigate(`/binders/${id}/transactions/${tx.id}`)}
                         >
-                          {formatDate(tx.date, dateFormat)}
+                          <PencilIcon width={15} />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="space-y-2 sm:hidden">
+            {transactions.map((tx) => {
+              const amt = parseFloat(tx.amount);
+              return (
+                <Card
+                  key={tx.id}
+                  className={`w-full bg-surface-secondary ${!tx.isCleared ? 'opacity-40' : ''}`}
+                  isPressable
+                  onPress={() => navigate(`/binders/${id}/transactions/${tx.id}`)}
+                >
+                  <CardBody>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        {tx.transferAccountName ? (
+                          <div className="text-sm font-medium truncate">
+                            <span className="text-xs text-default-500 font-semibold uppercase tracking-wider">TRANSFER </span>
+                            <span className="text-default-500">— </span>
+                            {tx.transferAccountName}
+                          </div>
+                        ) : (
+                          <div className="text-sm font-medium truncate">{tx.payeeName || '—'}</div>
+                        )}
+                        <div className="text-xs text-default-500 mt-0.5">{formatDate(tx.date, dateFormat)}</div>
+                        <div className="text-xs text-default-400 mt-0.5">{tx.accountName}</div>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className={`text-sm font-semibold tabular-nums ${amt >= 0 ? 'text-success' : 'text-danger'}`}>
+                          {amt >= 0 ? '+' : ''}{formatCurrency(amt, currency, numberLocale)}
                         </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <span>{tx.accountName}</span>
                         {tx.attachmentCount && tx.attachmentCount > 0 ? (
-                          <span className="inline-flex items-center gap-0.5 text-xs text-default-400">
+                          <span className="inline-flex items-center gap-0.5 text-xs text-default-400 mt-0.5">
                             <PaperClipIcon width={12} />
                             {tx.attachmentCount}
                           </span>
                         ) : null}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {tx.transferAccountName ? (
-                        <span className="inline-flex items-center gap-1">
-                          <span className="text-xs text-default-500 font-medium uppercase tracking-wider">
-                            TRANSFER
-                          </span>
-                          <span className="mx-1 text-default-500">—</span>
-                          <span className="font-medium">{tx.transferAccountName}</span>
-                        </span>
-                      ) : editingPayeeTxId === tx.id ? (
-                        <select
-                          value={tx.payeeId ?? ''}
-                          onChange={(e) => handlePayeeSelect(tx.id, e.target.value || null)}
-                          onBlur={() => setEditingPayeeTxId(null)}
-                          autoFocus
-                          className="max-w-32 rounded border border-primary bg-transparent px-1 py-0.5 text-sm outline-none"
-                        >
-                          <option value="">—</option>
-                          {payees.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span
-                          className="sm:cursor-pointer"
-                          onClick={(e) => {
-                            if (window.innerWidth < 640) return;
-                            e.stopPropagation();
-                            setEditingPayeeTxId(tx.id);
-                          }}
-                        >
-                          {tx.payeeName || '—'}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className={`text-right font-semibold tabular-nums ${amt >= 0 ? 'text-success' : 'text-danger'}`}>
-                      {isEditing ? (
-                        <input
-                          ref={inputRef}
-                          type="text"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSaveAmount(tx.id);
-                            } else if (e.key === 'Escape') {
-                              setEditingId(null);
-                            }
-                          }}
-                          onBlur={() => setEditingId(null)}
-                          className="w-28 rounded border border-primary bg-transparent px-2 py-1 text-right text-sm font-semibold tabular-nums outline-none"
-                          autoFocus
-                        />
-                      ) : (
-                        <span
-                          className="cursor-pointer sm:cursor-text"
-                          onClick={(e) => {
-                            if (window.innerWidth < 640) return;
-                            e.stopPropagation();
-                            setEditingId(tx.id);
-                            setEditingValue(tx.amount);
-                            requestAnimationFrame(() => inputRef.current?.focus());
-                          }}
-                        >
-                          {amt >= 0 ? '+' : ''}
-                          {formatCurrency(amt, currency, numberLocale)}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Button
-                        isIconOnly
-                        variant="light"
-                        size="sm"
-                        onPress={() => navigate(`/binders/${id}/transactions/${tx.id}`)}
-                      >
-                        <PencilIcon width={15} />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    </div>
+                  </CardBody>
+                </Card>
+              );
+            })}
+          </div>
           {hasMore && (
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-6 pb-20 sm:pb-0">
               <Button
                 variant="flat"
                 color="primary"
