@@ -1,5 +1,4 @@
 import { useParams } from 'react-router-dom';
-import FilterBar from './components/FilterBar';
 import CashFlowChart from './components/CashFlowChart';
 import SpendingBreakdownChart from './components/SpendingBreakdownChart';
 import PayeeAnalysisChart from './components/PayeeAnalysisChart';
@@ -11,8 +10,6 @@ export default function ReportsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Reports</h1>
-
-      <FilterBar binderId={id!} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>

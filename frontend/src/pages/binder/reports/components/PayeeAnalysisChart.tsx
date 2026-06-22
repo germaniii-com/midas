@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Spinner, Button, Input } from '@heroui/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getPayeeAnalysis, type PayeeRow } from '../../../../api/reports';
@@ -7,11 +7,10 @@ import { formatCurrency, useBinderCurrency } from '../../../../utils/format';
 
 export default function PayeeAnalysisChart() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
   const currency = useBinderCurrency();
 
-  const startDate = searchParams.get('startDate') || '';
-  const endDate = searchParams.get('endDate') || '';
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [sortBy, setSortBy] = useState<'amount' | 'count'>('amount');
   const [limit, setLimit] = useState(10);
 
@@ -55,7 +54,7 @@ export default function PayeeAnalysisChart() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div className="flex items-end gap-2 mb-3 flex-wrap">
         <Button
           size="sm"
           variant={sortBy === 'amount' ? 'solid' : 'flat'}
@@ -77,7 +76,23 @@ export default function PayeeAnalysisChart() {
           label="Top N"
           value={String(limit)}
           onValueChange={(v) => setLimit(Math.max(1, parseInt(v) || 10))}
-          className="w-24"
+          className="w-20"
+          size="sm"
+        />
+        <Input
+          label="Start"
+          type="date"
+          value={startDate}
+          onValueChange={setStartDate}
+          className="w-36"
+          size="sm"
+        />
+        <Input
+          label="End"
+          type="date"
+          value={endDate}
+          onValueChange={setEndDate}
+          className="w-36"
           size="sm"
         />
       </div>

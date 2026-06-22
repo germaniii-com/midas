@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { Spinner, Button } from '@heroui/react';
+import { useParams } from 'react-router-dom';
+import { Spinner, Button, Input } from '@heroui/react';
 import {
   PieChart,
   Pie,
@@ -20,11 +20,10 @@ const COLORS = [
 
 export default function SpendingBreakdownChart() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
   const currency = useBinderCurrency();
 
-  const startDate = searchParams.get('startDate') || '';
-  const endDate = searchParams.get('endDate') || '';
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
 
   const [data, setData] = useState<SpendingRow[]>([]);
@@ -53,7 +52,7 @@ export default function SpendingBreakdownChart() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-end gap-2 mb-3 flex-wrap">
         <Button
           size="sm"
           variant={transactionType === 'expense' ? 'solid' : 'flat'}
@@ -70,6 +69,22 @@ export default function SpendingBreakdownChart() {
         >
           Income
         </Button>
+        <Input
+          label="Start"
+          type="date"
+          value={startDate}
+          onValueChange={setStartDate}
+          className="w-36"
+          size="sm"
+        />
+        <Input
+          label="End"
+          type="date"
+          value={endDate}
+          onValueChange={setEndDate}
+          className="w-36"
+          size="sm"
+        />
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
