@@ -24,6 +24,7 @@ import {
   getPaymentSchedule,
   updatePaymentSchedule,
   deletePaymentSchedule,
+  deactivatePaymentSchedule,
   previewScheduleDates,
 } from '../../../api/payment-schedules';
 
@@ -56,6 +57,8 @@ export default function EditPaymentSchedulePage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
 
   const [payeeModalOpen, setPayeeModalOpen] = useState(false);
   const [newPayeeName, setNewPayeeName] = useState('');
@@ -174,6 +177,22 @@ export default function EditPaymentSchedulePage() {
       setError(message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeactivate() {
+    if (!id || !scheduleId) return;
+    setDeactivating(true);
+    setError('');
+    try {
+      await deactivatePaymentSchedule(id, scheduleId);
+      toastSuccess('Payment schedule deactivated');
+      navigate(`/binders/${id}/payment-schedules`);
+    } catch (err) {
+      const message = getErrorMessage(err, 'Failed to deactivate payment schedule');
+      toastError(message);
+      setError(message);
+      setDeactivating(false);
     }
   }
 
@@ -463,6 +482,14 @@ export default function EditPaymentSchedulePage() {
             Save Changes
           </Button>
           <Button
+            color="warning"
+            variant="flat"
+            onPress={() => setDeactivateModalOpen(true)}
+            isLoading={deactivating}
+          >
+            Deactivate
+          </Button>
+          <Button
             color="danger"
             variant="flat"
             onPress={() => setDeleteModalOpen(true)}
@@ -482,6 +509,23 @@ export default function EditPaymentSchedulePage() {
       >
         <p>Are you sure you want to delete this payment schedule? This will also remove all paid occurrences. This action cannot be undone.</p>
       </DeleteConfirmModal>
+
+      <Modal isOpen={deactivateModalOpen} onClose={() => setDeactivateModalOpen(false)} placement="center">
+        <ModalContent>
+          <ModalHeader>Deactivate Payment Schedule</ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to deactivate this schedule? It will no longer appear in transaction lists. Existing payments will not be affected.</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setDeactivateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="warning" onPress={handleDeactivate} isLoading={deactivating}>
+              Deactivate
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <Modal isOpen={payeeModalOpen} onClose={() => setPayeeModalOpen(false)} placement="center">
         <ModalContent>

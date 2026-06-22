@@ -181,6 +181,17 @@ export async function updatePaymentSchedule(
   return res.json();
 }
 
+export async function deactivatePaymentSchedule(
+  binderId: string,
+  scheduleId: string,
+): Promise<PaymentSchedule> {
+  const date = new Date().toISOString().slice(0, 10);
+  return updatePaymentSchedule(binderId, scheduleId, {
+    isActive: false,
+    name: `(Deactivated ${date})`,
+  });
+}
+
 export async function deletePaymentSchedule(
   binderId: string,
   scheduleId: string,
