@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, sql, inArray, desc } from 'drizzle-orm';
+import { eq, and, sql, inArray, desc, asc } from 'drizzle-orm';
 import { db } from '../db';
 import {
   paymentSchedules,
@@ -111,10 +111,22 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
     },
   );
 
-  app.get<{ Params: { id: string } }>(
+  app.get<{
+    Params: { id: string };
+    Querystring: { limit?: string; offset?: string; includeInactive?: string };
+  }>(
     '/binders/:id/payment-schedules',
     async (req, reply) => {
       const { id } = req.params;
+      const { limit: limitStr, offset: offsetStr, includeInactive } = req.query;
+      const limit = Math.min(Math.max(parseInt(limitStr || '50') || 50, 1), 500);
+      const offset = Math.max(parseInt(offsetStr || '0') || 0, 0);
+
+      const filters: any[] = [eq(paymentSchedules.binderId, id)];
+      if (includeInactive !== 'true') {
+        filters.push(eq(paymentSchedules.isActive, true));
+      }
+
       const rows = await db
         .select({
           id: paymentSchedules.id,
@@ -141,8 +153,10 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         .from(paymentSchedules)
         .leftJoin(accounts, eq(paymentSchedules.accountId, accounts.id))
         .leftJoin(payees, eq(paymentSchedules.payeeId, payees.id))
-        .where(eq(paymentSchedules.binderId, id))
-        .orderBy(paymentSchedules.createdAt);
+        .where(and(...filters))
+        .orderBy(desc(paymentSchedules.isActive), asc(paymentSchedules.name))
+        .limit(limit)
+        .offset(offset);
 
       return reply.send(rows);
     },

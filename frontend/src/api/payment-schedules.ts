@@ -95,8 +95,20 @@ export interface UpdatePaymentScheduleData {
   isActive?: boolean;
 }
 
-export async function getPaymentSchedules(binderId: string): Promise<PaymentSchedule[]> {
-  const res = await fetch(`${API_URL}/api/binders/${binderId}/payment-schedules`);
+export async function getPaymentSchedules(
+  binderId: string,
+  limit?: number,
+  offset?: number,
+  includeInactive?: boolean,
+): Promise<PaymentSchedule[]> {
+  const params = new URLSearchParams();
+  if (limit !== undefined) params.set('limit', String(limit));
+  if (offset !== undefined) params.set('offset', String(offset));
+  if (includeInactive) params.set('includeInactive', 'true');
+  const qs = params.toString();
+  const res = await fetch(
+    `${API_URL}/api/binders/${binderId}/payment-schedules${qs ? `?${qs}` : ''}`,
+  );
   if (!res.ok) throw new Error('Failed to fetch payment schedules');
   return res.json();
 }
