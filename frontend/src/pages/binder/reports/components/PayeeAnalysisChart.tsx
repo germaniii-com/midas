@@ -9,7 +9,11 @@ export default function PayeeAnalysisChart() {
   const { id } = useParams<{ id: string }>();
   const currency = useBinderCurrency();
 
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return d.toISOString().split('T')[0];
+  });
   const [endDate, setEndDate] = useState('');
   const [sortBy, setSortBy] = useState<'amount' | 'count'>('amount');
   const [limit, setLimit] = useState(10);
@@ -39,18 +43,16 @@ export default function PayeeAnalysisChart() {
     );
   }
 
-  if (data.length === 0) {
-    return <p className="text-app-muted text-sm py-16 text-center">No data for this period</p>;
-  }
-
-  const formatted = data.map((r) => ({
-    ...r,
-    displayValue: sortBy === 'amount' ? r.totalVolume : r.transactionCount,
-    label:
-      sortBy === 'amount'
-        ? formatCurrency(r.totalVolume, currency)
-        : `${r.transactionCount} tx${r.transactionCount !== 1 ? 's' : ''}`,
-  }));
+  const formatted = data.length > 0
+    ? data.map((r) => ({
+        ...r,
+        displayValue: sortBy === 'amount' ? r.totalVolume : r.transactionCount,
+        label:
+          sortBy === 'amount'
+            ? formatCurrency(r.totalVolume, currency)
+            : `${r.transactionCount} tx${r.transactionCount !== 1 ? 's' : ''}`,
+      }))
+    : [];
 
   return (
     <div>
@@ -96,20 +98,24 @@ export default function PayeeAnalysisChart() {
           size="sm"
         />
       </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={formatted} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" tick={{ fontSize: 12 }} />
-          <YAxis type="category" dataKey="payeeName" tick={{ fontSize: 12 }} width={90} />
-          <Tooltip
-            formatter={(_value, _name, props) => {
-              const p = props as unknown as { payload: PayeeRow & { label: string } };
-              return p.payload.label;
-            }}
-          />
-          <Bar dataKey="displayValue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+      {data.length === 0 ? (
+        <p className="text-app-muted text-sm py-16 text-center">No data for this period</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={formatted} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" tick={{ fontSize: 12 }} />
+            <YAxis type="category" dataKey="payeeName" tick={{ fontSize: 12 }} width={90} />
+            <Tooltip
+              formatter={(_value, _name, props) => {
+                const p = props as unknown as { payload: PayeeRow & { label: string } };
+                return p.payload.label;
+              }}
+            />
+            <Bar dataKey="displayValue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

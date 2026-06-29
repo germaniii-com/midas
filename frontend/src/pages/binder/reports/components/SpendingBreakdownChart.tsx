@@ -22,7 +22,11 @@ export default function SpendingBreakdownChart() {
   const { id } = useParams<{ id: string }>();
   const currency = useBinderCurrency();
 
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return d.toISOString().split('T')[0];
+  });
   const [endDate, setEndDate] = useState('');
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
 
@@ -44,10 +48,6 @@ export default function SpendingBreakdownChart() {
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>;
-  }
-
-  if (data.length === 0) {
-    return <p className="text-app-muted text-sm py-16 text-center">No data for this period</p>;
   }
 
   return (
@@ -86,29 +86,33 @@ export default function SpendingBreakdownChart() {
           size="sm"
         />
       </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="totalAmount"
-            nameKey="categoryName"
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            innerRadius={50}
-            label={({ name, percent }: { name?: string; percent?: number }) =>
-              `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
-            }
-          >
-            {data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value) => formatCurrency(Number(value) || 0, currency)}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      {data.length === 0 ? (
+        <p className="text-app-muted text-sm py-16 text-center">No data for this period</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="totalAmount"
+              nameKey="categoryName"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              innerRadius={50}
+              label={({ name, percent }: { name?: string; percent?: number }) =>
+                `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
+              }
+            >
+              {data.map((_, i) => (
+                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value) || 0, currency)}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

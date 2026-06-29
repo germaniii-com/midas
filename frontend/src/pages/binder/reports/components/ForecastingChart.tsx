@@ -66,14 +66,12 @@ export default function ForecastingChart() {
     return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>;
   }
 
-  if (data.length === 0) {
-    return <p className="text-app-muted text-sm py-16 text-center">No forecast data</p>;
-  }
-
-  const formatted = data.map((r) => ({
-    ...r,
-    dateLabel: formatDateLabel(r.date, data.length),
-  }));
+  const formatted = data.length > 0
+    ? data.map((r) => ({
+        ...r,
+        dateLabel: formatDateLabel(r.date, data.length),
+      }))
+    : [];
 
   const selectedAccountName = accounts.find((a) => a.id === baseAccountId)?.name || '';
 
@@ -110,32 +108,38 @@ export default function ForecastingChart() {
           Include drafts
         </Switch>
       </div>
-      <p className="text-xs text-app-muted mb-2">
-        Projection for <strong>{selectedAccountName}</strong>
-      </p>
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={formatted}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            tickFormatter={(v: number) => formatCurrency(v, currency, numberLocale)}
-          />
-          <Tooltip
-            formatter={(value) => formatCurrency(Number(value) || 0, currency, numberLocale)}
-          />
-          <Legend />
-          <Bar dataKey="scheduledOutflow" fill="#f97316" name="Scheduled Outflow" radius={[2, 2, 0, 0]} />
-          <Line
-            type="monotone"
-            dataKey="projectedBalance"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            name="Projected Balance"
-            dot={false}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+      {data.length === 0 ? (
+        <p className="text-app-muted text-sm py-16 text-center">No forecast data</p>
+      ) : (
+        <>
+          <p className="text-xs text-app-muted mb-2">
+            Projection for <strong>{selectedAccountName}</strong>
+          </p>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={formatted}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickFormatter={(v: number) => formatCurrency(v, currency, numberLocale)}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(Number(value) || 0, currency, numberLocale)}
+              />
+              <Legend />
+              <Bar dataKey="scheduledOutflow" fill="#f97316" name="Scheduled Outflow" radius={[2, 2, 0, 0]} />
+              <Line
+                type="monotone"
+                dataKey="projectedBalance"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                name="Projected Balance"
+                dot={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </>
+      )}
     </div>
   );
 }

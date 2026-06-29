@@ -21,7 +21,11 @@ export default function CashFlowChart() {
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
 
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return d.toISOString().split('T')[0];
+  });
   const [endDate, setEndDate] = useState('');
   const [interval, setInterval] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
@@ -55,14 +59,12 @@ export default function CashFlowChart() {
     return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>;
   }
 
-  if (data.length === 0) {
-    return <p className="text-app-muted text-sm py-16 text-center">No data for this period</p>;
-  }
-
-  const formatted = data.map((r) => ({
-    ...r,
-    label: formatLabel(r.date, interval),
-  }));
+  const formatted = data.length > 0
+    ? data.map((r) => ({
+        ...r,
+        label: formatLabel(r.date, interval),
+      }))
+    : [];
 
   return (
     <div>
@@ -113,19 +115,23 @@ export default function CashFlowChart() {
           ))}
         </Select>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={formatted}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => formatCurrency(v, currency, numberLocale)} />
-          <Tooltip
-            formatter={(value) => formatCurrency(Number(value) || 0, currency, numberLocale)}
-          />
-          <Legend />
-          <Bar dataKey="income" fill="#22c55e" name="Income" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="expense" fill="#ef4444" name="Expense" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+      {data.length === 0 ? (
+        <p className="text-app-muted text-sm py-16 text-center">No data for this period</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={formatted}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => formatCurrency(v, currency, numberLocale)} />
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value) || 0, currency, numberLocale)}
+            />
+            <Legend />
+            <Bar dataKey="income" fill="#22c55e" name="Income" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expense" fill="#ef4444" name="Expense" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }
