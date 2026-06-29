@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and, sql, inArray, count } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '../db';
 import { transactions, accounts, payees, tags, transactionTags, accountCategories, transactionAttachments } from '../db/schema';
 import { storage } from '../storage';

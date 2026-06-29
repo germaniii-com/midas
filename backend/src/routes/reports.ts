@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, sql, inArray, gte, lte } from 'drizzle-orm';
+import { eq, and, sql, inArray, gte, lte, notInArray } from 'drizzle-orm';
 import { addDays, format, parseISO, isBefore } from 'date-fns';
 import { db } from '../db';
 import {
@@ -14,7 +14,13 @@ import {
 } from '../db/schema';
 import { computeNextOccurrences, type ScheduleRule } from '../recurrence';
 
-const intervalMap = { daily: 'day', weekly: 'week', monthly: 'month' } as const;
+const truncMap = {
+  daily: 'date',
+  weekly: `date(date, '-' || ((cast(strftime('%w', date) as integer) + 6) % 7) || ' days')`,
+  monthly: `strftime('%Y-%m-01', date)`,
+} as const;
+
+const amountReal = (col: string) => `CAST(${col} AS REAL)`;
 
 export async function reportRoutes(app: FastifyInstance) {
   app.get<{
@@ -38,7 +44,7 @@ export async function reportRoutes(app: FastifyInstance) {
       ? accountIds.split(',').map((s) => s.trim()).filter(Boolean)
       : [];
 
-    const truncExpr = `DATE_TRUNC('${intervalMap[interval]}', date)`;
+    const truncExpr = truncMap[interval];
     const conditions = [
       eq(transactions.binderId, id),
       gte(transactions.date, startDate),
@@ -50,9 +56,9 @@ export async function reportRoutes(app: FastifyInstance) {
 
     const result = await db
       .select({
-        period: sql<string>`${sql.raw(truncExpr)}::text`,
-        income: sql<string>`COALESCE(SUM(CASE WHEN amount::numeric > 0 THEN amount::numeric ELSE 0 END), 0)`,
-        expense: sql<string>`COALESCE(SUM(CASE WHEN amount::numeric < 0 THEN ABS(amount::numeric) ELSE 0 END), 0)`,
+        period: sql<string>`${sql.raw(truncExpr)}`,
+        income: sql<string>`COALESCE(SUM(CASE WHEN ${sql.raw(amountReal('amount'))} > 0 THEN ${sql.raw(amountReal('amount'))} ELSE 0 END), 0)`,
+        expense: sql<string>`COALESCE(SUM(CASE WHEN ${sql.raw(amountReal('amount'))} < 0 THEN ABS(${sql.raw(amountReal('amount'))}) ELSE 0 END), 0)`,
       })
       .from(transactions)
       .where(and(...conditions))
@@ -94,21 +100,22 @@ export async function reportRoutes(app: FastifyInstance) {
       gte(transactions.date, startDate),
       lte(transactions.date, endDate),
       transactionType === 'expense'
-        ? sql`amount::numeric < 0`
-        : sql`amount::numeric > 0`,
+        ? sql`${sql.raw(amountReal('amount'))} < 0`
+        : sql`${sql.raw(amountReal('amount'))} > 0`,
     ];
 
     if (excludeTagIdList.length > 0) {
-      const quoted = excludeTagIdList.map((t) => `'${t}'`).join(',');
-      conditions.push(
-        sql`${transactions.id} NOT IN (SELECT transaction_id FROM transaction_tags WHERE tag_id = ANY(ARRAY[${sql.raw(quoted)}]))`,
-      );
+      const excludeTxIds = db
+        .select({ transactionId: transactionTags.transactionId })
+        .from(transactionTags)
+        .where(inArray(transactionTags.tagId, excludeTagIdList));
+      conditions.push(notInArray(transactions.id, excludeTxIds));
     }
 
     const result = await db
       .select({
         categoryName: categories.name,
-        totalAmount: sql<string>`COALESCE(SUM(ABS(amount::numeric)), 0)`,
+        totalAmount: sql<string>`COALESCE(SUM(ABS(${sql.raw(amountReal('amount'))})), 0)`,
       })
       .from(transactions)
       .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -116,7 +123,7 @@ export async function reportRoutes(app: FastifyInstance) {
       .innerJoin(categories, eq(accountCategories.categoryId, categories.id))
       .where(and(...conditions))
       .groupBy(categories.name)
-      .orderBy(sql`COALESCE(SUM(ABS(amount::numeric)), 0) desc`);
+      .orderBy(sql`COALESCE(SUM(ABS(${sql.raw(amountReal('amount'))})), 0) desc`);
 
     return reply.send(
       result.map((r) => ({
@@ -146,7 +153,7 @@ export async function reportRoutes(app: FastifyInstance) {
     const result = await db
       .select({
         payeeName: payees.name,
-        totalVolume: sql<string>`COALESCE(SUM(ABS(amount::numeric)), 0)`,
+        totalVolume: sql<string>`COALESCE(SUM(ABS(${sql.raw(amountReal('amount'))})), 0)`,
         transactionCount: sql<number>`COUNT(${transactions.id})`,
       })
       .from(transactions)
@@ -161,7 +168,7 @@ export async function reportRoutes(app: FastifyInstance) {
       .groupBy(payees.name)
       .orderBy(
         sortBy === 'amount'
-          ? sql`COALESCE(SUM(ABS(amount::numeric)), 0) desc`
+          ? sql`COALESCE(SUM(ABS(${sql.raw(amountReal('amount'))})), 0) desc`
           : sql`COUNT(${transactions.id}) desc`,
       )
       .limit(parseInt(limit) || 10);
@@ -199,7 +206,7 @@ export async function reportRoutes(app: FastifyInstance) {
 
     const [balanceRow] = await db
       .select({
-        balance: sql<string>`COALESCE(SUM(amount::numeric), 0)`,
+        balance: sql<string>`COALESCE(SUM(${sql.raw(amountReal('amount'))}), 0)`,
       })
       .from(transactions)
       .where(eq(transactions.accountId, accountId));

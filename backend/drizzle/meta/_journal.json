@@ -1,54 +1,12 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1780282671741,
-      "tag": "0000_create_initial_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780284731573,
-      "tag": "0001_add_binders_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780290175908,
-      "tag": "0002_remove_tag_name_unique_constraint",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1780291064555,
-      "tag": "0003_add_transaction_tags_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1780307833976,
-      "tag": "0004_add_categories_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1780411343862,
-      "tag": "0005_add_payment_schedule_fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1780985999289,
-      "tag": "0006_add_transaction_attachments",
+      "version": "6",
+      "when": 1782722036809,
+      "tag": "0000_tiresome_thena",
       "breakpoints": true
     }
   ]

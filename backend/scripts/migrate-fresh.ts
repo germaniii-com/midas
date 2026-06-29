@@ -1,25 +1,18 @@
 import 'dotenv/config';
 import { execSync } from 'child_process';
-import { Pool } from 'pg';
+import fs from 'node:fs';
+import path from 'node:path';
 
-async function main() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
+const dbDir = process.env.DATABASE_DIR || path.resolve(__dirname, '../sqlite_data');
+const dbPath = path.join(dbDir, 'midas.db');
 
-  console.log('Dropping all tables...');
+function main() {
+  if (fs.existsSync(dbPath)) {
+    fs.unlinkSync(dbPath);
+    console.log(`Deleted ${dbPath}`);
+  }
 
-  await pool.query(`
-    DO $$ DECLARE
-      r RECORD;
-    BEGIN
-      FOR r IN (SELECT schemaname, tablename FROM pg_tables WHERE schemaname IN (current_schema(), 'drizzle')) LOOP
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.schemaname) || '.' || quote_ident(r.tablename) || ' CASCADE';
-      END LOOP;
-    END $$;
-  `);
-
-  await pool.end();
+  fs.mkdirSync(dbDir, { recursive: true });
 
   console.log('Running migrations...');
   execSync('npx drizzle-kit migrate', { stdio: 'inherit' });
@@ -27,7 +20,4 @@ async function main() {
   console.log('Done!');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main();

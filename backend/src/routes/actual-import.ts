@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
 import initSqlJs from 'sql.js';
 import { eq, sql } from 'drizzle-orm';
-import { db, pool } from '../db';
+import { db, sqliteDb } from '../db';
 import { budgetBinders } from '../db/schema';
 
 function getFieldValue(field: Multipart | Multipart[] | undefined): string {
@@ -18,7 +18,7 @@ function fmt(val: unknown): string {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
   if (typeof val === 'number') return String(val);
-  if (typeof val === 'boolean') return val ? 'true' : 'false';
+  if (typeof val === 'boolean') return val ? '1' : '0';
   if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
   return `'${String(val)}'`;
 }
@@ -85,21 +85,21 @@ export async function actualImportRoutes(app: FastifyInstance) {
     }
 
     const SQL = await initSqlJs();
-    const sqliteDb = new SQL.Database(new Uint8Array(fileBuffer));
+    const actualDb = new SQL.Database(new Uint8Array(fileBuffer));
 
     const [accountsRes, payeesRes, payeeMappingRes, categoriesRes, categoryGroupsRes,
            categoryMappingRes, transactionsRes, notesRes] = [
-      sqliteDb.exec('SELECT * FROM accounts WHERE tombstone = 0 AND closed = 0'),
-      sqliteDb.exec('SELECT * FROM payees WHERE tombstone = 0'),
-      sqliteDb.exec('SELECT * FROM payee_mapping'),
-      sqliteDb.exec('SELECT * FROM categories WHERE tombstone = 0'),
-      sqliteDb.exec('SELECT * FROM category_groups WHERE tombstone = 0'),
-      sqliteDb.exec('SELECT * FROM category_mapping'),
-      sqliteDb.exec('SELECT * FROM transactions WHERE tombstone = 0'),
-      sqliteDb.exec('SELECT * FROM notes'),
+      actualDb.exec('SELECT * FROM accounts WHERE tombstone = 0 AND closed = 0'),
+      actualDb.exec('SELECT * FROM payees WHERE tombstone = 0'),
+      actualDb.exec('SELECT * FROM payee_mapping'),
+      actualDb.exec('SELECT * FROM categories WHERE tombstone = 0'),
+      actualDb.exec('SELECT * FROM category_groups WHERE tombstone = 0'),
+      actualDb.exec('SELECT * FROM category_mapping'),
+      actualDb.exec('SELECT * FROM transactions WHERE tombstone = 0'),
+      actualDb.exec('SELECT * FROM notes'),
     ];
 
-    sqliteDb.close();
+    actualDb.close();
 
     const accounts = toRows(accountsRes);
     const payees = toRows(payeesRes);
@@ -189,7 +189,7 @@ export async function actualImportRoutes(app: FastifyInstance) {
       `INSERT INTO budget_binders (id, name, description, currency, password_hash, created_at)`,
     );
     lines.push(
-      `VALUES (${fmt(newBinderId)}, ${fmt(finalName)}, NULL, ${fmt(newCurrency)}, ${fmt(passwordHash)}, NOW());`,
+      `VALUES (${fmt(newBinderId)}, ${fmt(finalName)}, NULL, ${fmt(newCurrency)}, ${fmt(passwordHash)}, datetime('now'));`,
     );
     lines.push('');
 
@@ -335,7 +335,7 @@ export async function actualImportRoutes(app: FastifyInstance) {
     const fullSql = lines.join('\n');
 
     try {
-      await pool.query(fullSql);
+      sqliteDb.exec(fullSql);
     } catch (err: unknown) {
       await db.delete(budgetBinders).where(eq(budgetBinders.id, newBinderId)).catch(() => {});
       const message = err instanceof Error ? err.message : 'Import failed';

@@ -1,21 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. Database Layer
-  db:
-    image: postgres:16-alpine
-    container_name: budget_postgres_db
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=budget_user
-      - POSTGRES_PASSWORD=budget_password
-      - POSTGRES_DB=actual_clone_db
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    restart: always
-
-  # 2. Object Storage (S3-compatible)
+  # 1. Object Storage (S3-compatible)
   minio:
     image: minio/minio:latest
     container_name: budget_minio
@@ -49,7 +35,7 @@ services:
       "
     restart: no
 
-  # 3. Server-First Backend API
+  # 2. Server-First Backend API
   api:
     build:
       context: ./backend
@@ -60,7 +46,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5000
-      - DATABASE_URL=postgresql://budget_user:budget_password@db:5432/actual_clone_db
+      - DATABASE_DIR=/data
       - STORAGE_MODE=s3
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
@@ -71,12 +57,12 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - ./sqlite_data:/data
     depends_on:
-      - db
       - minio-setup
     restart: always
 
-  # 4. Frontend Web Client (Static Nginx Delivery)
+  # 3. Frontend Web Client (Static Nginx Delivery)
   web:
     build:
       context: ./frontend

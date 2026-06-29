@@ -406,7 +406,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           scheduleId,
           dueDate,
           transactionId: tx.id,
-          paidAt: new Date(),
+          paidAt: new Date().toISOString(),
         })
         .returning();
 

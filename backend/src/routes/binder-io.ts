@@ -3,7 +3,7 @@ import type { Multipart } from '@fastify/multipart';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
-import { db, pool } from '../db';
+import { db, sqliteDb } from '../db';
 import { budgetBinders } from '../db/schema';
 
 function getFieldValue(field: Multipart | Multipart[] | undefined): string {
@@ -17,7 +17,7 @@ function fmt(val: unknown): string {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
   if (typeof val === 'number') return String(val);
-  if (typeof val === 'boolean') return val ? 'true' : 'false';
+  if (typeof val === 'boolean') return val ? '1' : '0';
   if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
   return `'${String(val)}'`;
 }
@@ -113,35 +113,25 @@ export async function binderIORoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Binder not found' });
     }
 
-    const data = await db.execute(
-      sql`
-        SELECT id, binder_id, name, type, created_at FROM accounts WHERE binder_id = ${id} ORDER BY created_at
-      `,
-    );
-    const accountsRows = data.rows as Record<string, unknown>[];
+    const accountsRows = sqliteDb.prepare(
+      'SELECT id, binder_id, name, type, created_at FROM accounts WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
-    const catData = await db.execute(
-      sql`SELECT id, binder_id, name, created_at FROM categories WHERE binder_id = ${id} ORDER BY created_at`,
-    );
-    const categoriesRows = catData.rows as Record<string, unknown>[];
+    const categoriesRows = sqliteDb.prepare(
+      'SELECT id, binder_id, name, created_at FROM categories WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
-    const tagData = await db.execute(
-      sql`SELECT id, binder_id, name, color, created_at FROM tags WHERE binder_id = ${id} ORDER BY created_at`,
-    );
-    const tagsRows = tagData.rows as Record<string, unknown>[];
+    const tagsRows = sqliteDb.prepare(
+      'SELECT id, binder_id, name, color, created_at FROM tags WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
-    const payeeData = await db.execute(
-      sql`SELECT id, binder_id, name, created_at FROM payees WHERE binder_id = ${id} ORDER BY created_at`,
-    );
-    const payeesRows = payeeData.rows as Record<string, unknown>[];
+    const payeesRows = sqliteDb.prepare(
+      'SELECT id, binder_id, name, created_at FROM payees WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
-    const txData = await db.execute(
-      sql`
-        SELECT id, binder_id, account_id, payee_id, transfer_id, amount, date, notes, is_cleared, created_at
-        FROM transactions WHERE binder_id = ${id} ORDER BY created_at
-      `,
-    );
-    const allTxRows = txData.rows as Record<string, unknown>[];
+    const allTxRows = sqliteDb.prepare(
+      'SELECT id, binder_id, account_id, payee_id, transfer_id, amount, date, notes, is_cleared, created_at FROM transactions WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
     const transferPairs: { id: string; transferId: string }[] = [];
     const txRowsWithoutTransfer = allTxRows.map((r) => {
@@ -153,49 +143,29 @@ export async function binderIORoutes(app: FastifyInstance) {
       return row;
     });
 
-    const ttData = await db.execute(
-      sql`
-        SELECT binder_id, transaction_id, tag_id FROM transaction_tags WHERE binder_id = ${id}
-      `,
-    );
-    const transactionTagsRows = ttData.rows as Record<string, unknown>[];
+    const transactionTagsRows = sqliteDb.prepare(
+      'SELECT binder_id, transaction_id, tag_id FROM transaction_tags WHERE binder_id = ?',
+    ).all(id) as Record<string, unknown>[];
 
-    const atData = await db.execute(
-      sql`SELECT binder_id, account_id, tag_id FROM account_tags WHERE binder_id = ${id}`,
-    );
-    const accountTagsRows = atData.rows as Record<string, unknown>[];
+    const accountTagsRows = sqliteDb.prepare(
+      'SELECT binder_id, account_id, tag_id FROM account_tags WHERE binder_id = ?',
+    ).all(id) as Record<string, unknown>[];
 
-    const acData = await db.execute(
-      sql`SELECT binder_id, account_id, category_id FROM account_categories WHERE binder_id = ${id}`,
-    );
-    const accountCategoriesRows = acData.rows as Record<string, unknown>[];
+    const accountCategoriesRows = sqliteDb.prepare(
+      'SELECT binder_id, account_id, category_id FROM account_categories WHERE binder_id = ?',
+    ).all(id) as Record<string, unknown>[];
 
-    const psData = await db.execute(
-      sql`
-        SELECT id, binder_id, name, account_id, payee_id, amount, repeat_interval, repeat_type,
-               start_date, end_type, end_date, end_occurrences, specific_days, weekend_adjustment,
-               notify_before, notify_type, is_active, created_at
-        FROM payment_schedules WHERE binder_id = ${id} ORDER BY created_at
-      `,
-    );
-    const paymentSchedulesRows = psData.rows as Record<string, unknown>[];
+    const paymentSchedulesRows = sqliteDb.prepare(
+      'SELECT id, binder_id, name, account_id, payee_id, amount, repeat_interval, repeat_type, start_date, end_type, end_date, end_occurrences, specific_days, weekend_adjustment, notify_before, notify_type, is_active, created_at FROM payment_schedules WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
-    const psoData = await db.execute(
-      sql`
-        SELECT id, binder_id, schedule_id, due_date, transaction_id, paid_at, created_at
-        FROM payment_schedule_occurrences WHERE binder_id = ${id} ORDER BY created_at
-      `,
-    );
-    const psoRows = psoData.rows as Record<string, unknown>[];
+    const psoRows = sqliteDb.prepare(
+      'SELECT id, binder_id, schedule_id, due_date, transaction_id, paid_at, created_at FROM payment_schedule_occurrences WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
-    const invData = await db.execute(
-      sql`
-        SELECT id, binder_id, account_id, principal_amount, interest_rate, interest_period,
-               compounding_frequency, tax_rate, start_date, maturity_date, created_at
-        FROM investments WHERE binder_id = ${id} ORDER BY created_at
-      `,
-    );
-    const investmentsRows = invData.rows as Record<string, unknown>[];
+    const investmentsRows = sqliteDb.prepare(
+      'SELECT id, binder_id, account_id, principal_amount, interest_rate, interest_period, compounding_frequency, tax_rate, start_date, maturity_date, created_at FROM investments WHERE binder_id = ? ORDER BY created_at',
+    ).all(id) as Record<string, unknown>[];
 
     const lines: string[] = [];
     lines.push('-- Midas Binder Export');
@@ -401,7 +371,7 @@ export async function binderIORoutes(app: FastifyInstance) {
       'BEGIN;',
       '',
       `INSERT INTO budget_binders (id, name, description, currency, password_hash, created_at)`,
-      `VALUES (${fmt(newBinderId)}, ${fmt(finalName)}, ${fmt(newDescription)}, ${fmt(newCurrency)}, ${fmt(passwordHash)}, NOW());`,
+      `VALUES (${fmt(newBinderId)}, ${fmt(finalName)}, ${fmt(newDescription)}, ${fmt(newCurrency)}, ${fmt(passwordHash)}, datetime('now'));`,
       '',
       ...rewrittenStmts,
       '',
@@ -419,7 +389,7 @@ export async function binderIORoutes(app: FastifyInstance) {
         return reply.status(409).send({ error: 'Binder ID collision, please retry' });
       }
 
-      await pool.query(fullSql);
+      sqliteDb.exec(fullSql);
     } catch (err: unknown) {
       await db.delete(budgetBinders).where(eq(budgetBinders.id, newBinderId)).catch(() => {});
       const message = err instanceof Error ? err.message : 'Import failed';

@@ -1,119 +1,89 @@
+import crypto from 'node:crypto';
 import {
-  pgTable,
-  uuid,
-  varchar,
-  boolean,
-  numeric,
-  integer,
-  jsonb,
-  timestamp,
-  date,
+  sqliteTable,
   text,
+  integer,
   primaryKey,
-  foreignKey,
   unique,
-} from 'drizzle-orm/pg-core';
+  foreignKey,
+} from 'drizzle-orm/sqlite-core';
 
-export const budgetBinders = pgTable('budget_binders', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: varchar('name', { length: 100 }).notNull().unique(),
+export const budgetBinders = sqliteTable('budget_binders', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull().unique(),
   description: text('description'),
-  currency: varchar('currency', { length: 3 }).default('USD'),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  currency: text('currency').default('USD'),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const payees = pgTable('payees', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 100 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+export const payees = sqliteTable('payees', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const tags = pgTable('tags', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 50 }).notNull(),
-  color: varchar('color', { length: 7 }).default('#3B82F6'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+export const tags = sqliteTable('tags', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  color: text('color').default('#3B82F6'),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const accounts = pgTable('accounts', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 100 }).notNull(),
-  type: varchar('type', { length: 20 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+export const accounts = sqliteTable('accounts', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const accountTags = pgTable(
+export const accountTags = sqliteTable(
   'account_tags',
   {
-    binderId: uuid('binder_id')
-      .notNull()
-      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    accountId: uuid('account_id')
-      .notNull()
-      .references(() => accounts.id, { onDelete: 'cascade' }),
-    tagId: uuid('tag_id')
-      .notNull()
-      .references(() => tags.id, { onDelete: 'cascade' }),
+    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.accountId, table.tagId] }),
   }),
 );
 
-export const categories = pgTable('categories', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 100 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+export const categories = sqliteTable('categories', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const accountCategories = pgTable(
+export const accountCategories = sqliteTable(
   'account_categories',
   {
-    binderId: uuid('binder_id')
-      .notNull()
-      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    accountId: uuid('account_id')
-      .notNull()
-      .references(() => accounts.id, { onDelete: 'cascade' }),
-    categoryId: uuid('category_id')
-      .notNull()
-      .references(() => categories.id, { onDelete: 'cascade' }),
+    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+    categoryId: text('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.accountId, table.categoryId] }),
   }),
 );
 
-export const transactions = pgTable(
+export const transactions = sqliteTable(
   'transactions',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    binderId: uuid('binder_id')
-      .notNull()
-      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    accountId: uuid('account_id')
-      .notNull()
-      .references(() => accounts.id, { onDelete: 'cascade' }),
-    payeeId: uuid('payee_id').references(() => payees.id, { onDelete: 'set null' }),
-    transferId: uuid('transfer_id'),
-    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
-    date: date('date').notNull(),
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+    payeeId: text('payee_id').references(() => payees.id, { onDelete: 'set null' }),
+    transferId: text('transfer_id'),
+    amount: text('amount').notNull(),
+    date: text('date').notNull(),
     notes: text('notes'),
-    isCleared: boolean('is_cleared').default(false),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    isCleared: integer('is_cleared', { mode: 'boolean' }).default(false),
+    createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
   },
   (table) => ({
     transferFk: foreignKey({
@@ -123,100 +93,76 @@ export const transactions = pgTable(
   }),
 );
 
-export const transactionTags = pgTable(
+export const transactionTags = sqliteTable(
   'transaction_tags',
   {
-    binderId: uuid('binder_id')
-      .notNull()
-      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    transactionId: uuid('transaction_id')
-      .notNull()
-      .references(() => transactions.id, { onDelete: 'cascade' }),
-    tagId: uuid('tag_id')
-      .notNull()
-      .references(() => tags.id, { onDelete: 'cascade' }),
+    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    transactionId: text('transaction_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.transactionId, table.tagId] }),
   }),
 );
 
-export const paymentSchedules = pgTable('payment_schedules', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 255 }).notNull(),
-  accountId: uuid('account_id')
-    .notNull()
-    .references(() => accounts.id, { onDelete: 'cascade' }),
-  payeeId: uuid('payee_id').references(() => payees.id, { onDelete: 'set null' }),
-  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+export const paymentSchedules = sqliteTable('payment_schedules', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  payeeId: text('payee_id').references(() => payees.id, { onDelete: 'set null' }),
+  amount: text('amount').notNull(),
   repeatInterval: integer('repeat_interval').notNull().default(1),
-  repeatType: varchar('repeat_type', { length: 10 }).notNull(),
-  startDate: date('start_date').notNull(),
-  endType: varchar('end_type', { length: 10 }).notNull().default('never'),
-  endDate: date('end_date'),
+  repeatType: text('repeat_type').notNull(),
+  startDate: text('start_date').notNull(),
+  endType: text('end_type').notNull().default('never'),
+  endDate: text('end_date'),
   endOccurrences: integer('end_occurrences'),
-  specificDays: jsonb('specific_days'),
-  weekendAdjustment: varchar('weekend_adjustment', { length: 10 }).notNull().default('none'),
+  specificDays: text('specific_days', { mode: 'json' }),
+  weekendAdjustment: text('weekend_adjustment').notNull().default('none'),
   notifyBefore: integer('notify_before').notNull().default(7),
-  notifyType: varchar('notify_type', { length: 10 }).default('days'),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  notifyType: text('notify_type').default('days'),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const paymentScheduleOccurrences = pgTable(
+export const paymentScheduleOccurrences = sqliteTable(
   'payment_schedule_occurrences',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    binderId: uuid('binder_id')
-      .notNull()
-      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    scheduleId: uuid('schedule_id')
-      .notNull()
-      .references(() => paymentSchedules.id, { onDelete: 'cascade' }),
-    dueDate: date('due_date').notNull(),
-    transactionId: uuid('transaction_id').references(() => transactions.id, { onDelete: 'set null' }),
-    paidAt: timestamp('paid_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    scheduleId: text('schedule_id').notNull().references(() => paymentSchedules.id, { onDelete: 'cascade' }),
+    dueDate: text('due_date').notNull(),
+    transactionId: text('transaction_id').references(() => transactions.id, { onDelete: 'set null' }),
+    paidAt: text('paid_at'),
+    createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
   },
   (table) => ({
     uniqueScheduleDueDate: unique().on(table.scheduleId, table.dueDate),
   }),
 );
 
-export const transactionAttachments = pgTable('transaction_attachments', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  transactionId: uuid('transaction_id')
-    .notNull()
-    .references(() => transactions.id, { onDelete: 'cascade' }),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  fileName: varchar('file_name', { length: 255 }).notNull(),
-  objectName: varchar('object_name', { length: 255 }).notNull(),
-  mimeType: varchar('mime_type', { length: 100 }),
+export const transactionAttachments = sqliteTable('transaction_attachments', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  transactionId: text('transaction_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull(),
+  objectName: text('object_name').notNull(),
+  mimeType: text('mime_type'),
   fileSize: integer('file_size'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });
 
-export const investments = pgTable('investments', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  binderId: uuid('binder_id')
-    .notNull()
-    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  accountId: uuid('account_id')
-    .notNull()
-    .references(() => accounts.id, { onDelete: 'cascade' }),
-  principalAmount: numeric('principal_amount', { precision: 12, scale: 2 })
-    .notNull()
-    .default('0.00'),
-  interestRate: numeric('interest_rate', { precision: 5, scale: 4 }).notNull(),
-  interestPeriod: varchar('interest_period', { length: 20 }).notNull(),
-  compoundingFrequency: varchar('compounding_frequency', { length: 20 }).notNull(),
-  taxRate: numeric('tax_rate', { precision: 5, scale: 4 }).default('0.0000'),
-  startDate: date('start_date').notNull(),
-  maturityDate: date('maturity_date'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+export const investments = sqliteTable('investments', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  principalAmount: text('principal_amount').notNull().default('0.00'),
+  interestRate: text('interest_rate').notNull(),
+  interestPeriod: text('interest_period').notNull(),
+  compoundingFrequency: text('compounding_frequency').notNull(),
+  taxRate: text('tax_rate').default('0.0000'),
+  startDate: text('start_date').notNull(),
+  maturityDate: text('maturity_date'),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
 });

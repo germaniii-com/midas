@@ -1,5 +1,6 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package.json ./
 RUN npm install
 COPY . .
@@ -7,16 +8,24 @@ RUN npm run build
 
 FROM node:20-alpine AS dev
 WORKDIR /app
+RUN mkdir -p /data && chown -R 1000:1000 /data
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app ./
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 5000
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["npm", "run", "dev"]
 
 FROM node:20-alpine AS prod
 WORKDIR /app
+RUN mkdir -p /data && chown -R 1000:1000 /data
 ENV NODE_ENV=production
 COPY package.json ./
 RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 5000
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "dist/index.js"]

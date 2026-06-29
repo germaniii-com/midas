@@ -13,6 +13,8 @@ import { payeeRoutes } from './routes/payees';
 import { paymentScheduleRoutes } from './routes/payment-schedules';
 import { reportRoutes } from './routes/reports';
 import { attachmentRoutes } from './routes/attachments';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { db } from './db';
 import { storage } from './storage';
 
 const app = Fastify({ logger: true });
@@ -45,6 +47,7 @@ app.register(routes, { prefix: '/api' });
 
 const start = async () => {
   try {
+    migrate(db, { migrationsFolder: './drizzle' });
     await storage.init();
     await app.listen({ port: Number(process.env.PORT) || 3000, host: '0.0.0.0' });
   } catch (err) {
