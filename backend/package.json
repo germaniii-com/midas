@@ -9,7 +9,8 @@
     "dev": "tsx watch src/index.ts",
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx drizzle-kit migrate",
-    "db:migrate:fresh": "tsx scripts/migrate-fresh.ts"
+    "db:migrate:fresh": "tsx scripts/migrate-fresh.ts",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
