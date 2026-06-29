@@ -126,7 +126,7 @@ export default function CreatePaymentSchedulePage() {
         name: name.trim(),
         accountId,
         payeeId: payeeId || null,
-        amount: String(amt),
+        amount: String(isExpense ? -amt : amt),
         repeatInterval: parseInt(repeatInterval) || 1,
         repeatType: repeatType as 'day' | 'week' | 'month' | 'year',
         startDate,

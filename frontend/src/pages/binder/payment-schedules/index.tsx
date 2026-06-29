@@ -107,7 +107,7 @@ export default function PaymentSchedulesPage() {
               {schedules.map((s) => {
                 const amt = parseFloat(s.amount);
                 const absAmt = Math.abs(amt);
-                const isExpense = amt <= 0 || true;
+                const isExpense = amt <= 0;
 
                 const repeatLabel = `Every ${s.repeatInterval} ${s.repeatType}${s.repeatInterval > 1 ? 's' : ''}`;
 

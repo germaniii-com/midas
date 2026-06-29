@@ -282,7 +282,7 @@ export async function reportRoutes(app: FastifyInstance) {
         if (isBefore(occDate, today) || isBefore(horizonDate, occDate)) continue;
 
         const amount = parseFloat(schedule.amount);
-        outflowByDate[occ.dueDate] = (outflowByDate[occ.dueDate] || 0) + amount;
+        outflowByDate[occ.dueDate] = (outflowByDate[occ.dueDate] || 0) - amount;
       }
     }
 
