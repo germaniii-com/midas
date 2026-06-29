@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Select, SelectItem, Button } from '@heroui/react';
-import {
-  SunIcon,
-  MoonIcon,
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-} from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../../hooks/useTheme';
 import { usePreferences } from '../../../hooks/usePreferences';
 import { exportBinder } from '../../../api/binders';
@@ -57,7 +52,10 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-4">
         {/* Export */}
-        <section className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
+        <section
+          className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm"
+          style={{ backgroundColor: 'var(--color-surface-secondary)' }}
+        >
           <h2 className="text-lg font-semibold mb-1">Export Binder</h2>
           <p className="text-sm text-app-muted mb-3">Download all binder data as a SQL file</p>
           <Button
@@ -69,20 +67,11 @@ export default function SettingsPage() {
           </Button>
         </section>
 
-        {/* Import */}
-        <section className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
-          <h2 className="text-lg font-semibold mb-1">Import Binder</h2>
-          <p className="text-sm text-app-muted mb-3">Restore a binder from a SQL export file</p>
-          <Button
-            startContent={<ArrowUpTrayIcon width={18} />}
-            onPress={() => setImportOpen(true)}
-          >
-            Import Binder
-          </Button>
-        </section>
-
         {/* Theme */}
-        <section className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
+        <section
+          className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm"
+          style={{ backgroundColor: 'var(--color-surface-secondary)' }}
+        >
           <h2 className="text-lg font-semibold mb-1">Theme</h2>
           <p className="text-sm text-app-muted mb-3">Choose between light and dark mode</p>
           <Button
@@ -97,7 +86,10 @@ export default function SettingsPage() {
         </section>
 
         {/* Display value format */}
-        <section className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
+        <section
+          className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm"
+          style={{ backgroundColor: 'var(--color-surface-secondary)' }}
+        >
           <h2 className="text-lg font-semibold mb-1">Display value format</h2>
           <p className="text-sm text-app-muted mb-3">How numbers are displayed</p>
           <Select
@@ -119,7 +111,10 @@ export default function SettingsPage() {
         </section>
 
         {/* Date format */}
-        <section className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
+        <section
+          className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm"
+          style={{ backgroundColor: 'var(--color-surface-secondary)' }}
+        >
           <h2 className="text-lg font-semibold mb-1">Date format</h2>
           <p className="text-sm text-app-muted mb-3">How dates are displayed</p>
           <Select
@@ -139,7 +134,10 @@ export default function SettingsPage() {
         </section>
 
         {/* First day of week */}
-        <section className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
+        <section
+          className="rounded-xl p-4 transition-all duration-200 hover:shadow-sm"
+          style={{ backgroundColor: 'var(--color-surface-secondary)' }}
+        >
           <h2 className="text-lg font-semibold mb-1">First day of the week</h2>
           <p className="text-sm text-app-muted mb-3">Sets which day starts the week</p>
           <Select
@@ -159,10 +157,7 @@ export default function SettingsPage() {
         </section>
       </div>
 
-      <BinderImportModal
-        isOpen={importOpen}
-        onClose={() => setImportOpen(false)}
-      />
+      <BinderImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
