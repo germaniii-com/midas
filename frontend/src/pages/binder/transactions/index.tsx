@@ -647,7 +647,7 @@ export default function TransactionsPage() {
               );
             })}
           </div>
-          {hasMore && (
+          {hasMore ? (
             <div className="flex justify-center mt-6 pb-20 sm:pb-0">
               <Button
                 variant="flat"
@@ -660,7 +660,11 @@ export default function TransactionsPage() {
                 Load More
               </Button>
             </div>
-          )}
+          ) : transactions.length > 0 ? (
+            <div className="flex justify-center mt-6 pb-20 sm:pb-0">
+              <p className="text-sm text-app-muted">No more records to load</p>
+            </div>
+          ) : null}
         </>
       )}
     </>

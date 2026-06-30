@@ -156,7 +156,7 @@ export default function PaymentSchedulesPage() {
               })}
             </TableBody>
           </Table>
-          {hasMore && (
+          {hasMore ? (
             <div className="flex justify-center mt-6 pb-20 sm:pb-0">
               <Button
                 variant="flat"
@@ -169,7 +169,11 @@ export default function PaymentSchedulesPage() {
                 Load More
               </Button>
             </div>
-          )}
+          ) : schedules.length > 0 ? (
+            <div className="flex justify-center mt-6 pb-20 sm:pb-0">
+              <p className="text-sm text-app-muted">No more records to load</p>
+            </div>
+          ) : null}
         </>
       )}
     </div>
