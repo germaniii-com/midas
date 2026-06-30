@@ -15,6 +15,7 @@ export const budgetBinders = sqliteTable('budget_binders', {
   currency: text('currency').default('USD'),
   passwordHash: text('password_hash').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const payees = sqliteTable('payees', {
@@ -22,6 +23,7 @@ export const payees = sqliteTable('payees', {
   binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const tags = sqliteTable('tags', {
@@ -30,6 +32,7 @@ export const tags = sqliteTable('tags', {
   name: text('name').notNull(),
   color: text('color').default('#3B82F6'),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const accounts = sqliteTable('accounts', {
@@ -38,6 +41,7 @@ export const accounts = sqliteTable('accounts', {
   name: text('name').notNull(),
   type: text('type').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const accountTags = sqliteTable(
@@ -57,6 +61,7 @@ export const categories = sqliteTable('categories', {
   binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const accountCategories = sqliteTable(
@@ -84,6 +89,7 @@ export const transactions = sqliteTable(
     notes: text('notes'),
     isCleared: integer('is_cleared', { mode: 'boolean' }).default(false),
     createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
   },
   (table) => ({
     transferFk: foreignKey({
@@ -124,6 +130,7 @@ export const paymentSchedules = sqliteTable('payment_schedules', {
   notifyType: text('notify_type').default('days'),
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const paymentScheduleOccurrences = sqliteTable(
@@ -136,6 +143,7 @@ export const paymentScheduleOccurrences = sqliteTable(
     transactionId: text('transaction_id').references(() => transactions.id, { onDelete: 'set null' }),
     paidAt: text('paid_at'),
     createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
   },
   (table) => ({
     uniqueScheduleDueDate: unique().on(table.scheduleId, table.dueDate),
@@ -151,6 +159,7 @@ export const transactionAttachments = sqliteTable('transaction_attachments', {
   mimeType: text('mime_type'),
   fileSize: integer('file_size'),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const investments = sqliteTable('investments', {
@@ -165,4 +174,32 @@ export const investments = sqliteTable('investments', {
   startDate: text('start_date').notNull(),
   maturityDate: text('maturity_date'),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
+});
+
+export const syncTargets = sqliteTable('sync_targets', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  host: text('host').notNull(),
+  password: text('password').notNull(),
+  autoSyncInterval: integer('auto_sync_interval'),
+  lastSyncedAt: text('last_synced_at'),
+  lastSyncStatus: text('last_sync_status').default('idle'),
+  lastError: text('last_error'),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+});
+
+export const syncJobs = sqliteTable('sync_jobs', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  targetId: text('target_id').notNull().references(() => syncTargets.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('pending'),
+  phase: text('phase').notNull().default('push'),
+  currentTable: text('current_table'),
+  currentOffset: integer('current_offset').default(0),
+  totalRecords: integer('total_records').default(0),
+  syncedRecords: integer('synced_records').default(0),
+  error: text('error'),
+  startedAt: text('started_at').$defaultFn(() => new Date().toISOString()),
+  completedAt: text('completed_at'),
 });

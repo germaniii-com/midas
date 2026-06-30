@@ -12,6 +12,7 @@ import {
 } from '../../../constants/preferences';
 import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import BinderImportModal from '../../home/components/BinderImportModal';
+import SyncSection from './SyncSection';
 
 export default function SettingsPage() {
   const { id } = useParams<{ id: string }>();
@@ -155,6 +156,9 @@ export default function SettingsPage() {
             ))}
           </Select>
         </section>
+
+        {/* Sync */}
+        <SyncSection />
       </div>
 
       <BinderImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} />

@@ -13,9 +13,11 @@ import { payeeRoutes } from './routes/payees';
 import { paymentScheduleRoutes } from './routes/payment-schedules';
 import { reportRoutes } from './routes/reports';
 import { attachmentRoutes } from './routes/attachments';
+import { syncRoutes } from './routes/sync';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { db } from './db';
 import { storage } from './storage';
+import { SyncScheduler } from './services/sync-scheduler';
 
 const app = Fastify({ logger: true });
 
@@ -41,6 +43,7 @@ async function routes(app: FastifyInstance) {
   app.register(paymentScheduleRoutes);
   app.register(reportRoutes);
   app.register(attachmentRoutes);
+  app.register(syncRoutes);
 }
 
 app.register(routes, { prefix: '/api' });
@@ -49,6 +52,12 @@ const start = async () => {
   try {
     migrate(db, { migrationsFolder: './drizzle' });
     await storage.init();
+
+    SyncScheduler.init();
+    SyncScheduler.getInstance().loadAll().catch((err) => {
+      console.error('Failed to load auto-sync jobs:', err);
+    });
+
     await app.listen({ port: Number(process.env.PORT) || 3000, host: '0.0.0.0' });
   } catch (err) {
     app.log.error(err);

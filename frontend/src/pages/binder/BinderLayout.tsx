@@ -20,13 +20,56 @@ import {
   PencilIcon,
   EyeIcon,
   EyeSlashIcon,
+  ArrowPathIcon,
+  ExclamationCircleIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { usePreferences } from '../../hooks/usePreferences';
 import { getBinderById, updateBinder, type Binder } from '../../api/binders';
+import { SyncProvider, useSync } from '../../hooks/useSync';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { currencies } from '../../constants/currencies';
 import { toastSuccess, toastError, getErrorMessage } from '../../utils/toast';
 import { navItems } from '../../constants/navItems';
+
+function SyncStatusIndicator({ collapsed }: { collapsed: boolean }) {
+  const { targets, statuses, syncingIds } = useSync();
+
+  if (targets.length === 0) return null;
+
+  const isSyncing = syncingIds.size > 0;
+  const hasFailed = targets.some((t) => {
+    const s = statuses[t.id]?.status || t.lastSyncStatus;
+    return s === 'failed' || s === 'syncing';
+  });
+
+  let icon: React.ReactNode;
+  let label: string;
+  let colorClass: string;
+
+  if (isSyncing) {
+    icon = <ArrowPathIcon width={16} className="animate-spin" />;
+    label = 'Syncing...';
+    colorClass = 'text-blue-500';
+  } else if (hasFailed) {
+    icon = <ExclamationCircleIcon width={16} />;
+    label = 'Sync failed';
+    colorClass = 'text-red-500';
+  } else {
+    icon = <CheckCircleIcon width={16} />;
+    label = 'Synced';
+    colorClass = 'text-green-500';
+  }
+
+  return (
+    <div className={collapsed ? 'flex justify-center' : 'px-3'}>
+      <div className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg ${colorClass}`}>
+        {icon}
+        {!collapsed && <span>{label}</span>}
+      </div>
+    </div>
+  );
+}
 
 export default function BinderLayout() {
   const { id } = useParams<{ id: string }>();
@@ -161,7 +204,7 @@ export default function BinderLayout() {
     );
   }
 
-  return (
+  const layout = (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <aside
@@ -206,6 +249,9 @@ export default function BinderLayout() {
         <nav className={`flex-1 flex flex-col gap-1 ${collapsed ? 'p-2 items-center' : 'p-3'}`}>
           <NavItems collapsed={collapsed} />
         </nav>
+
+        <SyncStatusIndicator collapsed={collapsed} />
+
         <div className="p-3">
           <div className={`flex ${collapsed ? 'flex-col items-center gap-2' : 'flex-col gap-1'}`}>
             <Button
@@ -376,4 +422,6 @@ export default function BinderLayout() {
       </Modal>
     </div>
   );
+
+  return <SyncProvider binderId={id}>{layout}</SyncProvider>;
 }
