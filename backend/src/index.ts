@@ -14,6 +14,7 @@ import { paymentScheduleRoutes } from './routes/payment-schedules';
 import { reportRoutes } from './routes/reports';
 import { attachmentRoutes } from './routes/attachments';
 import { syncRoutes } from './routes/sync';
+import { remoteRoutes } from './routes/remote';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { db } from './db';
 import { storage } from './storage';
@@ -44,6 +45,7 @@ async function routes(app: FastifyInstance) {
   app.register(reportRoutes);
   app.register(attachmentRoutes);
   app.register(syncRoutes);
+  app.register(remoteRoutes);
 }
 
 app.register(routes, { prefix: '/api' });

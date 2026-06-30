@@ -208,6 +208,26 @@ export async function syncRoutes(app: FastifyInstance) {
     },
   );
 
+  // ─── Sync-auth binder listing (for remote pull) ───
+
+  app.get('/sync/binders', async (req, reply) => {
+    if (!checkSyncAuth(req)) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const binders = await db
+      .select({
+        id: budgetBinders.id,
+        name: budgetBinders.name,
+        description: budgetBinders.description,
+        currency: budgetBinders.currency,
+      })
+      .from(budgetBinders)
+      .orderBy(budgetBinders.createdAt);
+
+    return reply.send(binders);
+  });
+
   // ─── Management endpoints (CRUD for sync targets) ───
 
   app.get<{ Params: { id: string } }>(
