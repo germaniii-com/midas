@@ -90,6 +90,7 @@ export default function SyncSection() {
     const s = statuses[targetId];
     if (!s || s.status !== 'syncing') return null;
 
+    const isDeterminate = s.progress !== undefined && s.phase === 'push';
     const progress = s.progress ?? 0;
     let phaseLabel = 'Syncing...';
     if (s.phase === 'push') phaseLabel = 'Pushing records...';
@@ -100,9 +101,15 @@ export default function SyncSection() {
       <div className="mt-3 space-y-1">
         <div className="flex justify-between text-xs text-app-muted">
           <span>{phaseLabel}</span>
-          <span>{progress}%</span>
+          {isDeterminate && <span>{progress}%</span>}
         </div>
-        <Progress aria-label="Sync progress" value={progress} size="sm" color="primary" />
+        <Progress
+          aria-label="Sync progress"
+          value={isDeterminate ? progress : undefined}
+          isIndeterminate={!isDeterminate}
+          size="sm"
+          color="primary"
+        />
       </div>
     );
   }

@@ -5,6 +5,11 @@ import { storage } from '../storage';
 
 const BATCH_SIZE = 100;
 
+function devDelay(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') return Promise.resolve();
+  return new Promise((r) => setTimeout(r, 3000));
+}
+
 const SYNC_TABLES = [
   'budget_binders',
   'accounts',
@@ -22,14 +27,19 @@ const SYNC_TABLES = [
 ];
 
 const ID_TABLES = new Set([
-  'budget_binders', 'accounts', 'categories', 'tags', 'payees',
-  'transactions', 'payment_schedules', 'payment_schedule_occurrences',
-  'investments', 'transaction_attachments',
+  'budget_binders',
+  'accounts',
+  'categories',
+  'tags',
+  'payees',
+  'transactions',
+  'payment_schedules',
+  'payment_schedule_occurrences',
+  'investments',
+  'transaction_attachments',
 ]);
 
-const JUNCTION_TABLES = new Set([
-  'account_tags', 'account_categories', 'transaction_tags',
-]);
+const JUNCTION_TABLES = new Set(['account_tags', 'account_categories', 'transaction_tags']);
 
 interface SyncTarget {
   id: string;
@@ -48,6 +58,7 @@ function remoteFetch(target: SyncTarget, path: string, options: RequestInit = {}
       headers[key] = incoming[key];
     }
   }
+  console.log(`[sync] remoteFetch: ${options.method || 'GET'} ${url}`);
   return fetch(url, { ...options, headers });
 }
 
@@ -55,20 +66,29 @@ function upsertRows(table: string, rows: Record<string, unknown>[]) {
   if (rows.length === 0) return;
   const columns = Object.keys(rows[0]);
   const placeholders = rows.map(() => `(${columns.map(() => '?').join(',')})`).join(',');
-  const values = rows.flatMap(row => columns.map(col => row[col]));
+  const values = rows.flatMap((row) => columns.map((col) => row[col]));
 
   if (ID_TABLES.has(table)) {
-    const setClause = columns.filter(c => c !== 'id').map(c => `"${c}" = excluded."${c}"`).join(', ');
-    sqliteDb.prepare(`
-      INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')})
+    const setColumns = columns.filter((c) => c !== 'id' && c !== 'created_at');
+    const setClause = setColumns.map((c) => `"${c}" = excluded."${c}"`).join(', ');
+    sqliteDb
+      .prepare(
+        `
+      INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')})
       VALUES ${placeholders}
       ON CONFLICT(id) DO UPDATE SET ${setClause}
-    `).run(...values);
+    `,
+      )
+      .run(...values);
   } else if (JUNCTION_TABLES.has(table)) {
-    sqliteDb.prepare(`
-      INSERT OR IGNORE INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')})
+    sqliteDb
+      .prepare(
+        `
+      INSERT OR IGNORE INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')})
       VALUES ${placeholders}
-    `).run(...values);
+    `,
+      )
+      .run(...values);
   }
 }
 
@@ -78,7 +98,11 @@ async function pushPhase(
   jobId: string,
   lastSyncedAt: string | null,
 ): Promise<void> {
-  const job = await db.select().from(syncJobs).where(eq(syncJobs.id, jobId)).then(r => r[0]);
+  const job = await db
+    .select()
+    .from(syncJobs)
+    .where(eq(syncJobs.id, jobId))
+    .then((r) => r[0]);
   if (!job) throw new Error('Sync job not found');
 
   let startIdx = job.currentTable ? SYNC_TABLES.indexOf(job.currentTable) : 0;
@@ -86,19 +110,26 @@ async function pushPhase(
 
   for (let i = startIdx; i < SYNC_TABLES.length; i++) {
     const table = SYNC_TABLES[i];
-    let offset = (table === job.currentTable && job.phase === 'push' ? (job.currentOffset ?? 0) : 0);
+    let offset = table === job.currentTable && job.phase === 'push' ? (job.currentOffset ?? 0) : 0;
 
-    await db.update(syncJobs).set({
-      status: 'running',
-      phase: 'push',
-      currentTable: table,
-      currentOffset: offset,
-    }).where(eq(syncJobs.id, jobId));
+    await db
+      .update(syncJobs)
+      .set({
+        status: 'running',
+        phase: 'push',
+        currentTable: table,
+        currentOffset: offset,
+      })
+      .where(eq(syncJobs.id, jobId));
 
     if (table === 'budget_binders') {
-      const [binder] = sqliteDb.prepare(`
+      const [binder] = sqliteDb
+        .prepare(
+          `
         SELECT * FROM budget_binders WHERE id = ?
-      `).all(binderId) as Record<string, unknown>[];
+      `,
+        )
+        .all(binderId) as Record<string, unknown>[];
       if (binder) {
         const res = await remoteFetch(target, '/api/sync/binder', {
           method: 'POST',
@@ -110,9 +141,12 @@ async function pushPhase(
           throw new Error(`Failed to sync binder metadata: ${res.status} ${text}`);
         }
       }
-      await db.update(syncJobs).set({
-        syncedRecords: sql`${syncJobs.syncedRecords} + 1`,
-      }).where(eq(syncJobs.id, jobId));
+      await db
+        .update(syncJobs)
+        .set({
+          syncedRecords: sql`${syncJobs.syncedRecords} + 1`,
+        })
+        .where(eq(syncJobs.id, jobId));
       continue;
     }
 
@@ -122,14 +156,22 @@ async function pushPhase(
 
     while (true) {
       const q = lastSyncedAt
-        ? sqliteDb.prepare(`SELECT * FROM "${table}" WHERE binder_id = ? AND updated_at > ? ORDER BY rowid LIMIT ? OFFSET ?`)
-        : sqliteDb.prepare(`SELECT * FROM "${table}" WHERE binder_id = ? ORDER BY rowid LIMIT ? OFFSET ?`);
+        ? sqliteDb.prepare(
+            `SELECT * FROM "${table}" WHERE binder_id = ? AND updated_at > ? ORDER BY rowid LIMIT ? OFFSET ?`,
+          )
+        : sqliteDb.prepare(
+            `SELECT * FROM "${table}" WHERE binder_id = ? ORDER BY rowid LIMIT ? OFFSET ?`,
+          );
 
-      const rows = (lastSyncedAt
-        ? q.all(binderId, lastSyncedAt, BATCH_SIZE, offset)
-        : q.all(binderId, BATCH_SIZE, offset)) as Record<string, unknown>[];
+      const rows = (
+        lastSyncedAt
+          ? q.all(binderId, lastSyncedAt, BATCH_SIZE, offset)
+          : q.all(binderId, BATCH_SIZE, offset)
+      ) as Record<string, unknown>[];
 
       if (rows.length === 0) break;
+
+      console.log(`[sync] pushPhase: ${table} offset=${offset} rows=${rows.length}`);
 
       const res = await remoteFetch(target, `/api/sync/push/${binderId}?table=${table}`, {
         method: 'POST',
@@ -142,11 +184,15 @@ async function pushPhase(
         throw new Error(`Push failed for ${table} at offset ${offset}: ${res.status} ${text}`);
       }
 
+      await devDelay();
       offset += rows.length;
-      await db.update(syncJobs).set({
-        currentOffset: offset,
-        syncedRecords: sql`${syncJobs.syncedRecords} + ${rows.length}`,
-      }).where(eq(syncJobs.id, jobId));
+      await db
+        .update(syncJobs)
+        .set({
+          currentOffset: offset,
+          syncedRecords: sql`${syncJobs.syncedRecords} + ${rows.length}`,
+        })
+        .where(eq(syncJobs.id, jobId));
     }
   }
 }
@@ -157,38 +203,52 @@ async function pullPhase(
   jobId: string,
   lastSyncedAt: string | null,
 ): Promise<void> {
-  const job = await db.select().from(syncJobs).where(eq(syncJobs.id, jobId)).then(r => r[0]);
+  const job = await db
+    .select()
+    .from(syncJobs)
+    .where(eq(syncJobs.id, jobId))
+    .then((r) => r[0]);
   if (!job) throw new Error('Sync job not found');
 
-  let startIdx = job.currentTable && job.phase === 'pull' ? SYNC_TABLES.indexOf(job.currentTable) : 0;
+  let startIdx =
+    job.currentTable && job.phase === 'pull' ? SYNC_TABLES.indexOf(job.currentTable) : 0;
   if (startIdx < 0) startIdx = 0;
 
   for (let i = startIdx; i < SYNC_TABLES.length; i++) {
     const table = SYNC_TABLES[i];
-    let offset = (table === job.currentTable && job.phase === 'pull' ? (job.currentOffset ?? 0) : 0);
+    let offset = table === job.currentTable && job.phase === 'pull' ? (job.currentOffset ?? 0) : 0;
 
-    await db.update(syncJobs).set({
-      status: 'running',
-      phase: 'pull',
-      currentTable: table,
-      currentOffset: offset,
-    }).where(eq(syncJobs.id, jobId));
+    await db
+      .update(syncJobs)
+      .set({
+        status: 'running',
+        phase: 'pull',
+        currentTable: table,
+        currentOffset: offset,
+      })
+      .where(eq(syncJobs.id, jobId));
 
     if (JUNCTION_TABLES.has(table) && lastSyncedAt) {
       continue;
     }
 
     if (table === 'budget_binders') {
-      const res = await remoteFetch(target, `/api/sync/pull/${binderId}?table=budget_binders&limit=1&offset=0`);
+      const res = await remoteFetch(
+        target,
+        `/api/sync/pull/${binderId}?table=budget_binders&limit=1&offset=0`,
+      );
       if (res.ok) {
-        const { rows } = await res.json() as { rows: Record<string, unknown>[] };
+        const { rows } = (await res.json()) as { rows: Record<string, unknown>[] };
         if (rows && rows.length > 0) {
           upsertRows('budget_binders', rows);
         }
       }
-      await db.update(syncJobs).set({
-        syncedRecords: sql`${syncJobs.syncedRecords} + 1`,
-      }).where(eq(syncJobs.id, jobId));
+      await db
+        .update(syncJobs)
+        .set({
+          syncedRecords: sql`${syncJobs.syncedRecords} + 1`,
+        })
+        .where(eq(syncJobs.id, jobId));
       continue;
     }
 
@@ -204,18 +264,24 @@ async function pullPhase(
         throw new Error(`Pull failed for ${table} at offset ${offset}: ${res.status} ${text}`);
       }
 
-      const { rows } = await res.json() as { rows: Record<string, unknown>[] };
+      const { rows } = (await res.json()) as { rows: Record<string, unknown>[] };
       if (!rows || rows.length === 0) break;
 
+      console.log(`[sync] pullPhase: ${table} offset=${offset} rows=${rows.length}`);
+
       upsertRows(table, rows);
+      await devDelay();
       offset += rows.length;
 
       const pullPhase = table === 'transaction_attachments' ? 'pulling_attachments' : 'pull';
-      await db.update(syncJobs).set({
-        status: pullPhase,
-        currentOffset: offset,
-        syncedRecords: sql`${syncJobs.syncedRecords} + ${rows.length}`,
-      }).where(eq(syncJobs.id, jobId));
+      await db
+        .update(syncJobs)
+        .set({
+          status: pullPhase,
+          currentOffset: offset,
+          syncedRecords: sql`${syncJobs.syncedRecords} + ${rows.length}`,
+        })
+        .where(eq(syncJobs.id, jobId));
     }
   }
 }
@@ -226,17 +292,24 @@ async function syncAttachmentsPull(
   jobId: string,
   lastSyncedAt: string | null,
 ): Promise<void> {
-  const job = await db.select().from(syncJobs).where(eq(syncJobs.id, jobId)).then(r => r[0]);
+  const job = await db
+    .select()
+    .from(syncJobs)
+    .where(eq(syncJobs.id, jobId))
+    .then((r) => r[0]);
   if (!job) throw new Error('Sync job not found');
 
-  let offset = (job.phase === 'pulling_attachments' ? (job.currentOffset ?? 0) : 0);
+  let offset = job.phase === 'pulling_attachments' ? (job.currentOffset ?? 0) : 0;
 
-  await db.update(syncJobs).set({
-    status: 'running',
-    phase: 'pulling_attachments',
-    currentTable: 'transaction_attachments',
-    currentOffset: offset,
-  }).where(eq(syncJobs.id, jobId));
+  await db
+    .update(syncJobs)
+    .set({
+      status: 'running',
+      phase: 'pulling_attachments',
+      currentTable: 'transaction_attachments',
+      currentOffset: offset,
+    })
+    .where(eq(syncJobs.id, jobId));
 
   while (true) {
     let url = `/api/sync/pull/${binderId}?table=transaction_attachments&limit=${BATCH_SIZE}&offset=${offset}`;
@@ -250,13 +323,13 @@ async function syncAttachmentsPull(
       throw new Error(`Pull attachments failed at offset ${offset}: ${res.status} ${text}`);
     }
 
-    const { rows: attachmentRows } = await res.json() as { rows: Record<string, unknown>[] };
+    const { rows: attachmentRows } = (await res.json()) as { rows: Record<string, unknown>[] };
     if (!attachmentRows || attachmentRows.length === 0) break;
 
     for (const att of attachmentRows) {
-      const existing = sqliteDb.prepare(
-        'SELECT id FROM transaction_attachments WHERE id = ?',
-      ).get(att.id) as { id: string } | undefined;
+      const existing = sqliteDb
+        .prepare('SELECT id FROM transaction_attachments WHERE id = ?')
+        .get(att.id) as { id: string } | undefined;
 
       if (!existing) {
         try {
@@ -272,31 +345,46 @@ async function syncAttachmentsPull(
       }
 
       offset++;
-      await db.update(syncJobs).set({
-        currentOffset: offset,
-        syncedRecords: sql`${syncJobs.syncedRecords} + 1`,
-      }).where(eq(syncJobs.id, jobId));
+      await devDelay();
+      await db
+        .update(syncJobs)
+        .set({
+          currentOffset: offset,
+          syncedRecords: sql`${syncJobs.syncedRecords} + 1`,
+        })
+        .where(eq(syncJobs.id, jobId));
     }
   }
 }
 
 export async function performSync(binderId: string, target: SyncTarget): Promise<void> {
-  const [syncTarget] = await db.select().from(syncTargets)
+  const [syncTarget] = await db
+    .select()
+    .from(syncTargets)
     .where(eq(syncTargets.id, target.id))
     .limit(1);
   if (!syncTarget) throw new Error('Sync target not found');
 
   const lastSyncedAt = syncTarget.lastSyncedAt;
 
-  await db.update(syncTargets).set({
-    lastSyncStatus: 'syncing',
-    lastError: null,
-  }).where(eq(syncTargets.id, target.id));
+  console.log(
+    `[sync] performSync: starting sync for binder=${binderId} target=${target.id} host=${target.host} lastSyncedAt=${lastSyncedAt}`,
+  );
+
+  await db
+    .update(syncTargets)
+    .set({
+      lastSyncStatus: 'syncing',
+      lastError: null,
+    })
+    .where(eq(syncTargets.id, target.id));
 
   let jobId: string | null = null;
 
   try {
-    const existingJob = await db.select().from(syncJobs)
+    const existingJob = await db
+      .select()
+      .from(syncJobs)
       .where(sql`${syncJobs.targetId} = ${target.id} AND ${syncJobs.status} = 'running'`)
       .limit(1);
 
@@ -312,72 +400,99 @@ export async function performSync(binderId: string, target: SyncTarget): Promise
         }
         const count = (
           lastSyncedAt
-            ? sqliteDb.prepare(`SELECT COUNT(*) as count FROM "${table}" WHERE binder_id = ? AND updated_at > ?`)
+            ? sqliteDb.prepare(
+                `SELECT COUNT(*) as count FROM "${table}" WHERE binder_id = ? AND updated_at > ?`,
+              )
             : sqliteDb.prepare(`SELECT COUNT(*) as count FROM "${table}" WHERE binder_id = ?`)
         ).get(binderId, ...(lastSyncedAt ? [lastSyncedAt] : [])) as { count: number };
         totalRecords += count.count + (table === 'transaction_attachments' ? count.count : 0);
       }
 
-      const [newJob] = await db.insert(syncJobs).values({
-        binderId,
-        targetId: target.id,
-        status: 'running',
-        phase: 'push',
-        totalRecords,
-      }).returning();
+      const [newJob] = await db
+        .insert(syncJobs)
+        .values({
+          binderId,
+          targetId: target.id,
+          status: 'running',
+          phase: 'push',
+          totalRecords,
+        })
+        .returning();
       jobId = newJob.id;
     }
 
-    await db.update(syncJobs).set({
-      status: 'running',
-      currentOffset: 0,
-      currentTable: null,
-      syncedRecords: 0,
-      phase: 'push',
-      error: null,
-    }).where(eq(syncJobs.id, jobId));
+    await db
+      .update(syncJobs)
+      .set({
+        status: 'running',
+        currentOffset: 0,
+        currentTable: null,
+        syncedRecords: 0,
+        phase: 'push',
+        error: null,
+      })
+      .where(eq(syncJobs.id, jobId));
 
     await pushPhase(target, binderId, jobId, lastSyncedAt);
 
-    await db.update(syncJobs).set({
-      phase: 'pull',
-      currentOffset: 0,
-      currentTable: null,
-    }).where(eq(syncJobs.id, jobId));
+    await db
+      .update(syncJobs)
+      .set({
+        phase: 'pull',
+        currentOffset: 0,
+        currentTable: null,
+      })
+      .where(eq(syncJobs.id, jobId));
 
     await pullPhase(target, binderId, jobId, lastSyncedAt);
 
-    await db.update(syncJobs).set({
-      phase: 'pulling_attachments',
-      currentOffset: 0,
-      currentTable: 'transaction_attachments',
-    }).where(eq(syncJobs.id, jobId));
+    await db
+      .update(syncJobs)
+      .set({
+        phase: 'pulling_attachments',
+        currentOffset: 0,
+        currentTable: 'transaction_attachments',
+      })
+      .where(eq(syncJobs.id, jobId));
 
     await syncAttachmentsPull(target, binderId, jobId, lastSyncedAt);
 
-    await db.update(syncJobs).set({
-      status: 'completed',
-      completedAt: new Date().toISOString(),
-    }).where(eq(syncJobs.id, jobId));
+    await db
+      .update(syncJobs)
+      .set({
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+      })
+      .where(eq(syncJobs.id, jobId));
 
-    await db.update(syncTargets).set({
-      lastSyncedAt: new Date().toISOString(),
-      lastSyncStatus: 'completed',
-      lastError: null,
-    }).where(eq(syncTargets.id, target.id));
+    await db
+      .update(syncTargets)
+      .set({
+        lastSyncedAt: new Date().toISOString(),
+        lastSyncStatus: 'completed',
+        lastError: null,
+      })
+      .where(eq(syncTargets.id, target.id));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     if (jobId) {
-      await db.update(syncJobs).set({
-        status: 'failed',
-        error: message,
-        completedAt: new Date().toISOString(),
-      }).where(eq(syncJobs.id, jobId));
+      await db
+        .update(syncJobs)
+        .set({
+          status: 'failed',
+          error: message,
+          completedAt: new Date().toISOString(),
+        })
+        .where(eq(syncJobs.id, jobId));
     }
-    await db.update(syncTargets).set({
-      lastSyncStatus: 'failed',
-      lastError: message,
-    }).where(eq(syncTargets.id, target.id));
+    await db
+      .update(syncTargets)
+      .set({
+        lastSyncStatus: 'failed',
+        lastError: message,
+      })
+      .where(eq(syncTargets.id, target.id));
+    console.error(`[sync] performSync failed: ${message}`);
     throw err;
   }
 }

@@ -98,14 +98,11 @@ export function SyncProvider({ children, binderId }: { children: ReactNode; bind
           ...prev,
           [targetId]: { status: 'syncing', lastSyncedAt: null, progress: 0 },
         }));
-      } catch {
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Server unreachable';
         setStatuses((prev) => ({
           ...prev,
-          [targetId]: {
-            status: 'failed',
-            lastSyncedAt: null,
-            lastError: 'Server unreachable',
-          },
+          [targetId]: { status: 'failed', lastSyncedAt: null, lastError: msg },
         }));
       }
     },

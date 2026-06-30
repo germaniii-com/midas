@@ -9,8 +9,19 @@ import { SyncScheduler } from '../services/sync-scheduler';
 function checkSyncAuth(req: { headers: Record<string, unknown> }): boolean {
   const password = req.headers['x-sync-password'];
   const serverPassword = process.env.SERVER_PASSWORD;
-  if (!serverPassword || !password) return false;
-  return String(password) === serverPassword;
+  if (!serverPassword) {
+    console.warn('[sync] SERVER_PASSWORD not set, rejecting sync request');
+    return false;
+  }
+  if (!password) {
+    console.warn('[sync] Missing x-sync-password header');
+    return false;
+  }
+  if (String(password) !== serverPassword) {
+    console.warn('[sync] x-sync-password mismatch');
+    return false;
+  }
+  return true;
 }
 
 export async function syncRoutes(app: FastifyInstance) {
@@ -26,14 +37,22 @@ export async function syncRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'Invalid binder data' });
     }
 
-    const existing = sqliteDb.prepare(
+    const byId = sqliteDb.prepare(
       'SELECT id FROM budget_binders WHERE id = ?',
     ).get(binder.id) as { id: string } | undefined;
 
-    if (existing) {
+    const byName = !byId ? sqliteDb.prepare(
+      'SELECT id FROM budget_binders WHERE name = ?',
+    ).get(binder.name) as { id: string } | undefined : undefined;
+
+    if (byId) {
       sqliteDb.prepare(`
-        UPDATE budget_binders SET name = ?, description = ?, currency = ? WHERE id = ?
+        UPDATE budget_binders SET name = ?, description = ?, currency = ?, updated_at = datetime('now') WHERE id = ?
       `).run(binder.name, binder.description, binder.currency, binder.id);
+    } else if (byName) {
+      sqliteDb.prepare(`
+        UPDATE budget_binders SET id = ?, description = ?, currency = ?, updated_at = datetime('now') WHERE id = ?
+      `).run(binder.id, binder.description, binder.currency, byName.id);
     } else {
       sqliteDb.prepare(`
         INSERT INTO budget_binders (id, name, description, currency, password_hash, created_at, updated_at)
@@ -66,6 +85,8 @@ export async function syncRoutes(app: FastifyInstance) {
       if (!table || !rows || !Array.isArray(rows) || rows.length === 0) {
         return reply.status(400).send({ error: 'Invalid request' });
       }
+
+      console.log(`[sync] receiver push: binder=${binderId} table=${table} rows=${rows.length}`);
 
       const exists = sqliteDb.prepare(
         'SELECT id FROM budget_binders WHERE id = ?',
@@ -345,6 +366,11 @@ export async function syncRoutes(app: FastifyInstance) {
         return reply.status(409).send({ error: 'Sync already in progress' });
       }
 
+      await db.update(syncTargets).set({
+        lastSyncStatus: 'syncing',
+        lastError: null,
+      }).where(eq(syncTargets.id, targetId));
+
       performSync(binderId, {
         id: target.id,
         host: target.host,
@@ -387,7 +413,9 @@ export async function syncRoutes(app: FastifyInstance) {
       if (activeJob) {
         const total = activeJob.totalRecords ?? 0;
         const synced = activeJob.syncedRecords ?? 0;
-        const progress = total > 0 ? Math.round((synced / total) * 100) : 0;
+        const progress = activeJob.phase === 'push' && total > 0
+          ? Math.min(Math.round((synced / total) * 100), 100)
+          : undefined;
 
         return reply.send({
           status: 'syncing',

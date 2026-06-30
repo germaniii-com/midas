@@ -3,5 +3,6 @@ dist/
 postgres_data/
 minio_data/
 sqlite_data/
+sqlite_data*/
 .env
 frontend/t
