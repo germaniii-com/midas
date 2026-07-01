@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spinner, Button, Input } from '@heroui/react';
+import { Spinner, Button, Input, Select, SelectItem } from '@heroui/react';
 import {
   PieChart,
   Pie,
@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'recharts';
 import { getSpendingBreakdown, type SpendingRow } from '../../../../api/reports';
+import { getTags, type Tag } from '../../../../api/tags';
 import { formatCurrency, useBinderCurrency } from '../../../../utils/format';
 import { getErrorMessage } from '../../../../utils/toast';
 import { ErrorMessage } from '../../../../components/ErrorMessage';
@@ -31,10 +32,20 @@ export default function SpendingBreakdownChart() {
   });
   const [endDate, setEndDate] = useState('');
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
+  const [groupBy, setGroupBy] = useState<'category' | 'tags'>('category');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
 
   const [data, setData] = useState<SpendingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    getTags(id)
+      .then(setTags)
+      .catch(() => {});
+  }, [id]);
 
   async function fetchData() {
     if (!id) return;
@@ -45,6 +56,8 @@ export default function SpendingBreakdownChart() {
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         transactionType,
+        groupBy,
+        includeTagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : undefined,
       });
       setData(result);
     } catch (err) {
@@ -57,7 +70,7 @@ export default function SpendingBreakdownChart() {
 
   useEffect(() => {
     fetchData();
-  }, [id, startDate, endDate, transactionType]);
+  }, [id, startDate, endDate, transactionType, groupBy, selectedTagIds]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>;
@@ -82,6 +95,22 @@ export default function SpendingBreakdownChart() {
         >
           Income
         </Button>
+        <Button
+          size="sm"
+          variant={groupBy === 'category' ? 'solid' : 'flat'}
+          color="primary"
+          onPress={() => setGroupBy('category')}
+        >
+          Category
+        </Button>
+        <Button
+          size="sm"
+          variant={groupBy === 'tags' ? 'solid' : 'flat'}
+          color="primary"
+          onPress={() => setGroupBy('tags')}
+        >
+          Tags
+        </Button>
         <Input
           label="Start"
           type="date"
@@ -98,6 +127,28 @@ export default function SpendingBreakdownChart() {
           className="w-36"
           size="sm"
         />
+        <Select
+          label="Tags"
+          placeholder="All tags"
+          selectionMode="multiple"
+          selectedKeys={new Set(selectedTagIds)}
+          onSelectionChange={(keys) =>
+            setSelectedTagIds(Array.from(keys).map(String).filter(Boolean))
+          }
+          className="w-44"
+          size="sm"
+        >
+          {tags.map((t) => (
+            <SelectItem key={t.id} textValue={t.name}>
+              <div className="flex items-center gap-2">
+                {t.color && (
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
+                )}
+                <span>{t.name}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </Select>
       </div>
       {error ? (
         <ErrorMessage message={error} onRetry={fetchData} />

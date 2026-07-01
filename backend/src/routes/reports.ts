@@ -11,6 +11,7 @@ import {
   paymentSchedules,
   paymentScheduleOccurrences,
   transactionTags,
+  tags,
 } from '../db/schema';
 import { computeNextOccurrences, type ScheduleRule } from '../recurrence';
 
@@ -93,6 +94,8 @@ export async function reportRoutes(app: FastifyInstance) {
       startDate?: string;
       endDate?: string;
       transactionType?: 'income' | 'expense';
+      groupBy?: 'category' | 'tags';
+      includeTagIds?: string;
       excludeTagIds?: string;
     };
   }>('/binders/:id/reports/spending-breakdown', async (req, reply) => {
@@ -101,8 +104,14 @@ export async function reportRoutes(app: FastifyInstance) {
       startDate = format(new Date(), 'yyyy-MM-01'),
       endDate = format(new Date(), 'yyyy-MM-dd'),
       transactionType = 'expense',
+      groupBy = 'category',
+      includeTagIds,
       excludeTagIds,
     } = req.query;
+
+    const includeTagIdList = includeTagIds
+      ? includeTagIds.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
 
     const excludeTagIdList = excludeTagIds
       ? excludeTagIds.split(',').map((s) => s.trim()).filter(Boolean)
@@ -117,12 +126,41 @@ export async function reportRoutes(app: FastifyInstance) {
         : sql`${sql.raw(amountReal('amount'))} > 0`,
     ];
 
+    if (includeTagIdList.length > 0) {
+      const matchingTxIds = db
+        .select({ transactionId: transactionTags.transactionId })
+        .from(transactionTags)
+        .where(inArray(transactionTags.tagId, includeTagIdList));
+      conditions.push(inArray(transactions.id, matchingTxIds));
+    }
+
     if (excludeTagIdList.length > 0) {
       const excludeTxIds = db
         .select({ transactionId: transactionTags.transactionId })
         .from(transactionTags)
         .where(inArray(transactionTags.tagId, excludeTagIdList));
       conditions.push(notInArray(transactions.id, excludeTxIds));
+    }
+
+    if (groupBy === 'tags') {
+      const result = await db
+        .select({
+          categoryName: tags.name,
+          totalAmount: sql<string>`COALESCE(SUM(ABS(${sql.raw(amountReal('amount'))})), 0)`,
+        })
+        .from(transactions)
+        .innerJoin(transactionTags, eq(transactions.id, transactionTags.transactionId))
+        .innerJoin(tags, eq(transactionTags.tagId, tags.id))
+        .where(and(...conditions))
+        .groupBy(tags.name)
+        .orderBy(sql`COALESCE(SUM(ABS(${sql.raw(amountReal('amount'))})), 0) desc`);
+
+      return reply.send(
+        result.map((r) => ({
+          categoryName: r.categoryName,
+          totalAmount: parseFloat(r.totalAmount),
+        })),
+      );
     }
 
     const result = await db

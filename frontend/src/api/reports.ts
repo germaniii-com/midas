@@ -35,6 +35,8 @@ export interface SpendingBreakdownParams {
   startDate?: string;
   endDate?: string;
   transactionType?: 'income' | 'expense';
+  groupBy?: 'category' | 'tags';
+  includeTagIds?: string;
   excludeTagIds?: string;
 }
 
