@@ -36,27 +36,90 @@ Midas is a self-hosted, multi-tenant personal finance application. Create passwo
 git clone <repo-url>
 cd midas
 
-# Copy environment files (edit to your preferences)
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-
-# Start all services
+# Start all services (uses pre-built images from GitHub Container Registry)
 docker compose up -d
-
-# Run database migrations
-docker compose exec api npx drizzle-kit migrate
-
-# Optionally seed sample data
-docker compose exec api npx tsx scripts/seed.ts
 ```
 
 Once running, the app is available at `http://localhost:5173`.
 
 | Service | Port | Description |
 |---|---|---|
-| Frontend | `5173` | React web client |
+| Frontend | `5173` | React web client (nginx) |
 | API | `5001` | Fastify backend server |
 | MinIO Console | `9001` | S3-compatible storage UI |
+
+### Production environment variables
+
+The `docker-compose.yml` configures the following variables for local production-like runs:
+
+**Backend (`api`)**
+
+| Variable | Value | Description |
+|---|---|---|
+| `NODE_ENV` | `production` | Runtime mode |
+| `PORT` | `5000` | API server port (internal) |
+| `DATABASE_DIR` | `/data` | SQLite database directory |
+| `STORAGE_MODE` | `s3` | File storage backend (`s3` or `local`) |
+| `MINIO_ENDPOINT` | `minio` | MinIO server hostname |
+| `MINIO_PORT` | `9000` | MinIO port |
+| `MINIO_ACCESS_KEY` | `minioadmin` | MinIO access key |
+| `MINIO_SECRET_KEY` | `minioadmin` | MinIO secret key |
+| `MINIO_BUCKET` | `budget-files` | S3 bucket name |
+| `MINIO_USE_SSL` | `false` | Whether to use SSL for MinIO |
+
+**Frontend (`web`)**
+
+| Variable | Value | Description |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:5001` | Backend API URL (from browser) |
+| `NODE_ENV` | `production` | Runtime mode |
+
+**MinIO**
+
+| Variable | Value | Description |
+|---|---|---|
+| `MINIO_ROOT_USER` | `minioadmin` | MinIO admin username |
+| `MINIO_ROOT_PASSWORD` | `minioadmin` | MinIO admin password |
+
+Edit these values in `docker-compose.yml` to match your environment. Set `STORAGE_MODE=local` to skip MinIO (files stored on disk instead). The `sqlite_data/` directory persists the database.
+
+### Sample docker-compose.yml
+
+Create a `docker-compose.yml` with the following content and run `docker compose up`:
+
+```yaml
+version: '3.8'
+
+services:
+  api:
+    image: ghcr.io/germaniii-com/germaniii-com/midas/backend
+    platform: linux/amd64
+    ports:
+      - "5001:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DATABASE_DIR=/data
+      - STORAGE_MODE=local
+    volumes:
+      - /app/node_modules
+      - ./sqlite_data:/data
+    restart: always
+
+  web:
+    image: ghcr.io/germaniii-com/germaniii-com/midas/frontend
+    platform: linux/amd64
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:5001
+      - NODE_ENV=production
+    volumes:
+      - /app/node_modules
+    depends_on:
+      - api
+    restart: always
+```
 
 ---
 
