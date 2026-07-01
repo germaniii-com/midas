@@ -321,7 +321,11 @@ export default function EditTransactionPage() {
             }
             onSelectionChange={(keys) => {
               const val = Array.from(keys)[0] as string | undefined;
-              if (!val) return;
+              if (!val) {
+                setPayeeId('');
+                setTransferAccountId('');
+                return;
+              }
               const [type, id] = val.split(':');
               if (type === 'account') {
                 setTransferAccountId(id);
