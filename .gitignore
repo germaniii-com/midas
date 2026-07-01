@@ -6,3 +6,4 @@ sqlite_data/
 sqlite_data*/
 .env
 frontend/t
+midas.db*
