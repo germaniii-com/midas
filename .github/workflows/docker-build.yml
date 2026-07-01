@@ -8,218 +8,39 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    outputs:
-      registry: ${{ steps.check-env.outputs.registry }}
-      image_name: ${{ steps.check-env.outputs.image_name }}
-    steps:
-      - name: Check required environment variables and secrets
-        id: check-env
-        env:
-          REGISTRY: ghcr.io
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
-        run: |
-          if [ -z "$REGISTRY" ]; then
-            echo "Error: REGISTRY (repository variable) is not set. Create it in Settings > Secrets and variables > Actions." >&2
-            exit 1
-          fi
-          if [ -z "$REGISTRY_USERNAME" ]; then
-            echo "Error: REGISTRY_USERNAME (repository secret) is not set. Create it in Settings > Secrets and variables > Actions." >&2
-            exit 1
-          fi
-          if [ -z "$REGISTRY_TOKEN" ]; then
-            echo "Error: REGISTRY_TOKEN (repository secret) is not set. Create it in Settings > Secrets and variables > Actions." >&2
-            exit 1
-          fi
-          if [ -z "${{ env.IMAGE_NAME }}" ]; then
-            echo "Error: IMAGE_NAME could not be derived from github.repository." >&2
-            exit 1
-          fi
-          echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
-          echo "image_name=${{ env.IMAGE_NAME }}" >> "$GITHUB_OUTPUT"
-
-  backend:
-    needs: [validate]
+  build:
+    strategy:
+      matrix:
+        target: [backend, frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout code
-        run: |
-          git init -q
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git fetch --depth=1 origin ${{ github.sha }}
-          git checkout -q FETCH_HEAD
+      - name: Checkout Code
+        uses: actions/checkout@v4 # Allowed: This is an internal GitHub action
 
-      - name: Set up Docker Buildx
-        run: |
-          docker buildx create --use --name builder --driver docker-container --bootstrap
+      - name: Log in to Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Log in to registry
+      - name: Build and Push
         run: |
-          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "${{ needs.validate.outputs.registry }}" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
-
-      - name: Generate Docker tags
-        id: meta
-        env:
-          REGISTRY: ${{ needs.validate.outputs.registry }}
-          IMAGE: ${{ needs.validate.outputs.image_name }}/backend
-        run: |
-          FULL_IMAGE="$REGISTRY/$IMAGE"
-          TAGS=""
-
-          if [[ "$GITHUB_REF" == refs/heads/* ]]; then
-            BRANCH="${GITHUB_REF#refs/heads/}"
-            BRANCH="${BRANCH//\//-}"
-            TAGS="$TAGS,$FULL_IMAGE:$BRANCH"
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ github.repository }}/${{ matrix.target }}"
+          IMAGE="${IMAGE,,}" # Ensure lowercase
+          
+          # Build arguments
+          TAGS="-t $IMAGE:${GITHUB_SHA::7} -t $IMAGE:latest"
+          
+          # Add version tag if on a tag
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            TAGS="$TAGS -t $IMAGE:${GITHUB_REF#refs/tags/v}"
           fi
 
-          if [[ "${{ github.event_name }}" == pull_request ]]; then
-            TAGS="$TAGS,$FULL_IMAGE:pr-${{ github.event.pull_request.number }}"
-          fi
-
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-            MAJOR="${VERSION%%.*}"
-            MINOR="${VERSION%.*}"
-            TAGS="$TAGS,$FULL_IMAGE:$VERSION"
-            TAGS="$TAGS,$FULL_IMAGE:$MAJOR.$MINOR"
-          fi
-
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          TAGS="$TAGS,$FULL_IMAGE:$SHORT_SHA"
-          TAGS="$TAGS,$FULL_IMAGE:$GITHUB_SHA"
-
-          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
-            TAGS="$TAGS,$FULL_IMAGE:latest"
-          fi
-
-          TAGS="${TAGS#,}"
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push backend
-        env:
-          PUSH: ${{ github.event_name != 'pull_request' }}
-        run: |
-          TAGS="${{ steps.meta.outputs.tags }}"
-          TAG_ARGS=()
-          IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
-          for tag in "${TAG_ARRAY[@]}"; do
-            TAG_ARGS+=("-t" "$tag")
-          done
-
-          CACHE_ARGS=(
-            --cache-from=type=registry,ref=${{ needs.validate.outputs.registry }}/${{ needs.validate.outputs.image_name }}/backend:cache
-            --target prod
-            ./backend
-          )
-
-          if [ "$PUSH" = "true" ]; then
-            docker buildx build \
-              "${TAG_ARGS[@]}" \
-              --push \
-              --cache-to=type=registry,ref=${{ needs.validate.outputs.registry }}/${{ needs.validate.outputs.image_name }}/backend:cache,mode=max \
-              "${CACHE_ARGS[@]}"
-          else
-            docker buildx build \
-              "${TAG_ARGS[@]}" \
-              "${CACHE_ARGS[@]}"
-          fi
-
-  frontend:
-    needs: [validate]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout code
-        run: |
-          git init -q
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git fetch --depth=1 origin ${{ github.sha }}
-          git checkout -q FETCH_HEAD
-
-      - name: Set up Docker Buildx
-        run: |
-          docker buildx create --use --name builder --driver docker-container --bootstrap
-
-      - name: Log in to registry
-        run: |
-          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "${{ needs.validate.outputs.registry }}" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
-
-      - name: Generate Docker tags
-        id: meta
-        env:
-          REGISTRY: ${{ needs.validate.outputs.registry }}
-          IMAGE: ${{ needs.validate.outputs.image_name }}/frontend
-        run: |
-          FULL_IMAGE="$REGISTRY/$IMAGE"
-          TAGS=""
-
-          if [[ "$GITHUB_REF" == refs/heads/* ]]; then
-            BRANCH="${GITHUB_REF#refs/heads/}"
-            BRANCH="${BRANCH//\//-}"
-            TAGS="$TAGS,$FULL_IMAGE:$BRANCH"
-          fi
-
-          if [[ "${{ github.event_name }}" == pull_request ]]; then
-            TAGS="$TAGS,$FULL_IMAGE:pr-${{ github.event.pull_request.number }}"
-          fi
-
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-            MAJOR="${VERSION%%.*}"
-            MINOR="${VERSION%.*}"
-            TAGS="$TAGS,$FULL_IMAGE:$VERSION"
-            TAGS="$TAGS,$FULL_IMAGE:$MAJOR.$MINOR"
-          fi
-
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          TAGS="$TAGS,$FULL_IMAGE:$SHORT_SHA"
-          TAGS="$TAGS,$FULL_IMAGE:$GITHUB_SHA"
-
-          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
-            TAGS="$TAGS,$FULL_IMAGE:latest"
-          fi
-
-          TAGS="${TAGS#,}"
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push frontend
-        env:
-          PUSH: ${{ github.event_name != 'pull_request' }}
-        run: |
-          TAGS="${{ steps.meta.outputs.tags }}"
-          TAG_ARGS=()
-          IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
-          for tag in "${TAG_ARRAY[@]}"; do
-            TAG_ARGS+=("-t" "$tag")
-          done
-
-          CACHE_ARGS=(
-            --cache-from=type=registry,ref=${{ needs.validate.outputs.registry }}/${{ needs.validate.outputs.image_name }}/frontend:cache
-            --target prod
-            ./frontend
-          )
-
-          if [ "$PUSH" = "true" ]; then
-            docker buildx build \
-              "${TAG_ARGS[@]}" \
-              --push \
-              --cache-to=type=registry,ref=${{ needs.validate.outputs.registry }}/${{ needs.validate.outputs.image_name }}/frontend:cache,mode=max \
-              "${CACHE_ARGS[@]}"
-          else
-            docker buildx build \
-              "${TAG_ARGS[@]}" \
-              "${CACHE_ARGS[@]}"
-          fi
+          docker buildx build \
+            $TAGS \
+            --target prod \
+            --cache-from=type=registry,ref=$IMAGE:cache \
+            --cache-to=type=registry,ref=$IMAGE:cache,mode=max \
+            --push ./${{ matrix.target }}
