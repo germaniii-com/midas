@@ -32,4 +32,13 @@ if [ -d "$DATABASE_DIR" ]; then
   chown -R 1000:1000 "$DATABASE_DIR"
 fi
 
+if [ "$NODE_ENV" = "development" ] && [ ! -f "dist/index.js" ]; then
+  echo "dist/index.js not found - installing dependencies for development..."
+  npm install
+  echo "Starting in development mode..."
+  exec npm run dev
+fi
+
+npm rebuild
+
 exec "$@"

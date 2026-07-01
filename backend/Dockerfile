@@ -9,8 +9,9 @@ RUN npm run build
 FROM node:20-alpine AS dev
 WORKDIR /app
 RUN mkdir -p /data && chown -R 1000:1000 /data
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app ./
+COPY package.json ./
+RUN npm install
+COPY . .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 5000
@@ -21,9 +22,11 @@ FROM node:20-alpine AS prod
 WORKDIR /app
 RUN mkdir -p /data && chown -R 1000:1000 /data
 ENV NODE_ENV=production
+RUN apk add --no-cache python3 make g++
 COPY package.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev && npm rebuild && apk del python3 make g++
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/drizzle ./drizzle
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 5000
