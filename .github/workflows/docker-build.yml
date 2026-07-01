@@ -35,6 +35,13 @@ jobs:
             git checkout -q ${{ github.sha }}
           fi
 
+      - name: Set up Docker Buildx
+        run: |
+          # Create a new builder that uses the docker-container driver
+          docker buildx create --name custom-builder --driver docker-container --use
+          # Bootstrap the builder to ensure it's ready
+          docker buildx inspect --bootstrap
+
       - name: Log in to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
