@@ -15,6 +15,7 @@
     "build:desktop": "npm run build --workspace=desktop",
     "package:desktop": "npm run build --workspace=backend && npm run build --workspace=frontend && npm run package --workspace=desktop",
     "package:desktop:dist": "npm run build --workspace=backend && npm run build --workspace=frontend && npm run package:dist --workspace=desktop",
+    "release:desktop": "bash scripts/release-desktop.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint ."

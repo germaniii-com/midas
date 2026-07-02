@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "author": "germaniii",
+  "license": "MIT",
   "description": "Midas - Personal Budget Manager",
   "main": "out/main/index.js",
   "type": "module",
