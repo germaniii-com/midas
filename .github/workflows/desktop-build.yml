@@ -68,8 +68,15 @@ jobs:
           sudo apt-get install -y -qq \
             libgtk-3-0 libnotify4 libnss3 libxss1 \
             libxtst6 xdg-utils libatspi2.0-0 \
-            libdrm2 libgbm1 libasound2 \
-            fuse libfuse2 rpm
+            libdrm2 libgbm1 \
+            fuse rpm \
+            libasound2t64 2>/dev/null || \
+          sudo apt-get install -y -qq \
+            libgtk-3-0 libnotify4 libnss3 libxss1 \
+            libxtst6 xdg-utils libatspi2.0-0 \
+            libdrm2 libgbm1 \
+            fuse rpm \
+            libasound2 libfuse2 2>/dev/null
 
       - name: Install project dependencies
         run: npm ci
