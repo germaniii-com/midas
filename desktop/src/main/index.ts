@@ -65,9 +65,9 @@ async function startBackend(): Promise<number> {
   };
 
   if (isPackaged) {
-    backendProcess = spawn(path.join(process.resourcesPath, 'backend', 'dist', 'index.js'), [], {
+    backendProcess = spawn(process.execPath, ['dist/index.js'], {
       cwd: backendDir,
-      env,
+      env: { ...env, ELECTRON_RUN_AS_NODE: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } else {

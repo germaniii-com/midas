@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, cpSync, readdirSync, statSync } from 'fs'
 import { resolve, dirname, sep } from 'path'
 import { fileURLToPath } from 'url'
+import { execSync } from 'child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = resolve(__dirname, '..', '..')
@@ -9,6 +10,7 @@ const backendPkg = JSON.parse(readFileSync(backendPkgPath, 'utf-8'))
 
 const deps = { ...backendPkg.dependencies }
 const targetDir = resolve(__dirname, '..', 'release-backend-deps')
+const nodeModulesDir = resolve(targetDir, 'node_modules')
 
 if (!existsSync(targetDir)) {
   mkdirSync(targetDir, { recursive: true })
@@ -99,4 +101,40 @@ function dirSize(dir) {
 
 const bytes = dirSize(targetDir)
 const mb = (bytes / 1024 / 1024).toFixed(1)
-console.log(`Copied ${count} backend dependencies (${mb}MB) to ${targetDir}/node_modules`)
+console.log(`Copied ${count} backend dependencies (${mb}MB) to ${nodeModulesDir}`)
+
+// Create a package.json inside node_modules for electron-rebuild to scan
+writeFileSync(
+  resolve(nodeModulesDir, 'package.json'),
+  JSON.stringify(
+    {
+      name: 'backend-deps',
+      version: '1.0.0',
+      private: true,
+      dependencies: deps,
+    },
+    null,
+    2,
+  ),
+)
+
+// Rebuild native modules for Electron's Node.js version
+const electronVersion = JSON.parse(
+  readFileSync(resolve(rootDir, 'node_modules', 'electron', 'package.json'), 'utf-8'),
+).version
+console.log(`Rebuilding native modules for Electron ${electronVersion} ...`)
+
+try {
+  execSync(
+    `npx --yes @electron/rebuild` +
+      ` --version "${electronVersion}"` +
+      ` --module-dir "${nodeModulesDir}"` +
+      ` --arch "${process.arch}"` +
+      ` --force`,
+    { cwd: rootDir, stdio: 'inherit', timeout: 120000 },
+  )
+  console.log('Native modules rebuilt successfully')
+} catch (err) {
+  console.warn('Native module rebuild failed:', err.message)
+  console.warn('The app may still work if native modules are not required')
+}
