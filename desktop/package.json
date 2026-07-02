@@ -7,6 +7,10 @@
   "description": "Midas - Personal Budget Manager",
   "main": "out/main/index.js",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/germaniii-com/midas.git"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -21,6 +25,7 @@
   "build": {
     "appId": "com.germaniii.midas",
     "productName": "Midas",
+    "publish": null,
     "directories": {
       "output": "release"
     },
