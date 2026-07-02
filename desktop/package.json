@@ -62,8 +62,7 @@
       "target": [
         "dmg"
       ],
-      "category": "public.app-category.finance",
-      "hardenedRuntime": true
+      "category": "public.app-category.finance"
     },
     "win": {
       "target": [
