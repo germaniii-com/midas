@@ -2,6 +2,7 @@ name: Desktop Build
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
   pull_request:
     branches: [main]
@@ -10,6 +11,9 @@ on:
 permissions:
   contents: write
   packages: write
+
+env:
+  NODE_VERSION: "20"
 
 jobs:
   build:
@@ -20,41 +24,52 @@ jobs:
         include:
           - os: macos-latest
             build-cmd: package:mac
-            artifact-glob: |
-              desktop/release/*.dmg
-              desktop/release/*.zip
+            artifact-glob: desktop/release/*.dmg
             artifact-name: Midas-macOS
-            icon-setup: |
-              # No additional setup needed on macOS
 
           - os: ubuntu-latest
             build-cmd: package:linux
-            artifact-glob: |
-              desktop/release/*.AppImage
-              desktop/release/*.snap
-              desktop/release/*.deb
+            artifact-glob: desktop/release/*.AppImage
             artifact-name: Midas-Linux
-            icon-setup: |
-              sudo apt-get update -qq
-              sudo apt-get install -y -qq \
-                libgtk-3-0 libnotify4 libnss3 libxss1 \
-                libxtst6 xdg-utils libatspi2.0-0 \
-                libdrm2 libgbm1 libasound2 \
-                fuse libfuse2 rpm
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        run: |
+          git config --global init.defaultBranch main
+          git init
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch --depth=1 origin +refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/origin/pr
+            git checkout -q origin/pr
+          else
+            git fetch --depth=1 origin ${{ github.sha }}
+            git checkout -q ${{ github.sha }}
+          fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
+        run: |
+          if command -v nvm &>/dev/null; then
+            nvm install $NODE_VERSION
+            nvm use $NODE_VERSION
+          elif command -v fnm &>/dev/null; then
+            fnm install $NODE_VERSION
+            fnm use $NODE_VERSION
+          fi
+          echo "node $(node --version)"
+          echo "npm v$(npm --version)"
 
-      - name: Install system dependencies
-        run: ${{ matrix.icon-setup }}
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            libgtk-3-0 libnotify4 libnss3 libxss1 \
+            libxtst6 xdg-utils libatspi2.0-0 \
+            libdrm2 libgbm1 libasound2 \
+            fuse libfuse2 rpm
 
       - name: Install project dependencies
         run: npm ci
@@ -71,18 +86,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List release artifacts
-        run: ls -laR desktop/release/ || true
+        run: |
+          if [ -d desktop/release ]; then
+            find desktop/release -type f -ls
+          else
+            echo "No release directory found"
+          fi
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact-name }}-${{ github.sha }}
-          path: ${{ matrix.artifact-glob }}
-          if-no-files-found: warn
-
-      - name: Upload to Release
+      - name: Upload to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ matrix.artifact-glob }}
-          generate_release_notes: true
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "Creating release $VERSION ..."
+
+          # Create release
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --generate-notes \
+            --repo ${{ github.repository }} || echo "Release may already exist"
+
+          # Upload artifacts
+          for f in ${{ matrix.artifact-glob }}; do
+            if [ -f "$f" ]; then
+              echo "Uploading $f ..."
+              gh release upload "$VERSION" "$f" \
+                --repo ${{ github.repository }} --clobber
+            fi
+          done
