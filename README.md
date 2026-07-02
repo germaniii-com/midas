@@ -167,7 +167,53 @@ npm run dev:frontend  # UI on http://localhost:5173
 
 ---
 
-## Environment Variables
+## Desktop App
+
+Midas can also run as a standalone desktop application via Electron, with the backend embedded as a child process.
+
+**Prerequisites:** Node.js 20.19, npm workspaces enabled
+
+### Development
+
+> **`npm run dev:desktop`** — Start the app in development mode with hot reload
+
+This single command:
+1. Finds a free port so it never conflicts with other services
+2. Starts the backend on that port
+3. Launches an Electron window pointed at the Vite dev server
+4. The window shows Chrome DevTools automatically
+
+The backend database and file attachments are stored in `sqlite_data/` (dev) or `~/Library/Application Support/Midas/data/` (packaged).
+
+### Production packaging
+
+> **`npm run release:desktop`** — Full release build for your current platform
+
+Runs the complete pipeline: clean install → build backend → build frontend → package with electron-builder.
+
+| Command | Output |
+|---------|--------|
+| `npm run release:desktop` | Full release (calls `scripts/release-desktop.sh`) |
+| `npm run package:desktop` | Unpacked `.app` for testing |
+| `npm run package:desktop:dist` | Distributable installer (DMG/AppImage/NSIS) |
+| `npm run package:mac` | macOS `.dmg` only |
+| `npm run package:linux` | Linux `.AppImage` only |
+| `npm run package:win` | Windows `.exe` only |
+
+**How it works:** The main process spawns the backend as a child process on a random available port, passes the port via `additionalArguments` to the preload script, which exposes it through `contextBridge` to the renderer. The frontend reads `window.electronAPI.getApiUrl` to know where the API is — no hardcoded ports.
+
+### CI / Release workflow
+
+Push a version tag to trigger an automated cross-platform build on GitHub Actions:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This builds for macOS (`.dmg`) and Linux (`.AppImage`) and uploads the artifacts to GitHub Releases.
+
+---
 
 ### Backend (`backend/.env`)
 
@@ -208,5 +254,11 @@ npm run dev:frontend  # UI on http://localhost:5173
 │   │   ├── pages/    # Page components
 │   │   └── components/ # Shared UI components
 │   └── Dockerfile
+├── desktop/          # Electron desktop app
+│   ├── src/main/     # Main process (backend spawning, window mgmt)
+│   ├── src/preload/  # Secure IPC bridge to renderer
+│   ├── scripts/      # Build utilities (dependency copier)
+│   └── electron.vite.config.ts
+├── scripts/          # Release automation
 └── docker-compose.yml
 ```
