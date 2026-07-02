@@ -1,0 +1,85 @@
+{
+  "name": "desktop",
+  "version": "1.0.0",
+  "private": true,
+  "author": "germaniii",
+  "description": "Midas - Personal Budget Manager",
+  "main": "out/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "copy:deps": "node scripts/copy-backend-deps.js",
+    "package": "npm run copy:deps && npm run build && electron-builder --dir",
+    "package:dist": "npm run copy:deps && npm run build && electron-builder",
+    "package:mac": "npm run copy:deps && npm run build && electron-builder --mac",
+    "package:win": "npm run copy:deps && npm run build && electron-builder --win",
+    "package:linux": "npm run copy:deps && npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.germaniii.midas",
+    "productName": "Midas",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../backend/dist",
+        "to": "backend/dist",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "release-backend-deps/node_modules",
+        "to": "backend/node_modules",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "release-backend-deps/backend-package.json",
+        "to": "backend/package.json"
+      },
+      {
+        "from": "../backend/drizzle",
+        "to": "backend/drizzle",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.finance",
+      "hardenedRuntime": true
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.6",
+    "@vitejs/plugin-react": "^4.2.0",
+    "electron": "40.10.2",
+    "electron-builder": "^26.0.0",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.3.3"
+  }
+}

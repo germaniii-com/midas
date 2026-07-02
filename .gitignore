@@ -6,4 +6,7 @@ sqlite_data/
 sqlite_data*/
 .env
 frontend/t
+desktop/out/
+desktop/release/
+desktop/release-backend-deps/
 midas.db*
