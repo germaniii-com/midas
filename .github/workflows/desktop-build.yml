@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      sign_macos:
+        description: "Sign macOS build with Apple Developer ID"
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: write
@@ -25,17 +31,17 @@ jobs:
           - os: macos-latest
             build-cmd: package:mac
             artifact-glob: desktop/release/*.dmg
-            artifact-name: Midas-macOS
+            artifact-suffix: ${{ (inputs.sign_macos && 'signed') || 'unsigned' }}
 
           - os: ubuntu-latest
             build-cmd: package:linux
             artifact-glob: desktop/release/*.AppImage
-            artifact-name: Midas-Linux
+            artifact-suffix: linux
 
           - os: windows-latest
             build-cmd: package:win
             artifact-glob: desktop/release/*.exe
-            artifact-name: Midas-Windows
+            artifact-suffix: windows
 
     runs-on: ${{ matrix.os }}
 
@@ -58,7 +64,6 @@ jobs:
       - name: Setup Node.js
         shell: bash
         run: |
-          # Use nvm on Linux/macOS, fallback to system Node.js on Windows
           if command -v nvm &>/dev/null; then
             nvm install $NODE_VERSION
             nvm use $NODE_VERSION
@@ -86,6 +91,27 @@ jobs:
             fuse rpm \
             libasound2 libfuse2 2>/dev/null
 
+      - name: Setup macOS code signing
+        if: runner.os == 'macOS' && inputs.sign_macos
+        shell: bash
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "CSC_LINK set: ${{ secrets.CSC_LINK != '' }}"
+          echo "APPLE_ID set: ${{ secrets.APPLE_ID != '' }}"
+          echo "Code signing will be applied during packaging"
+
+          # Import certificate
+          if [ -n "${{ secrets.CSC_LINK }}" ]; then
+            echo "${{ secrets.CSC_LINK }}" | base64 --decode > /tmp/cert.p12
+            security import /tmp/cert.p12 -P "${{ secrets.CSC_KEY_PASSWORD }}" -A
+            rm /tmp/cert.p12
+          fi
+
       - name: Install project dependencies
         run: npm ci
 
@@ -99,6 +125,28 @@ jobs:
         run: npm run ${{ matrix.build-cmd }} --workspace=desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Notarize macOS build
+        if: runner.os == 'macOS' && inputs.sign_macos && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for dmg in desktop/release/*.dmg; do
+            if [ -f "$dmg" ]; then
+              echo "Notarizing $dmg ..."
+              xcrun notarytool submit "$dmg" \
+                --apple-id "$APPLE_ID" \
+                --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+                --team-id "$APPLE_TEAM_ID" \
+                --wait
+              xcrun stapler staple "$dmg"
+            fi
+          done
 
       - name: List release artifacts
         shell: bash
@@ -118,13 +166,11 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/}"
           echo "Creating release $VERSION ..."
 
-          # Create release
           gh release create "$VERSION" \
             --title "$VERSION" \
             --generate-notes \
             --repo ${{ github.repository }} || echo "Release may already exist"
 
-          # Upload artifacts (shell expands wildcard to matched files)
           for f in ${{ matrix.artifact-glob }}; do
             if [ -f "$f" ]; then
               echo "Uploading $f ..."
