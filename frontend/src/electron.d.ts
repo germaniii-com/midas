@@ -5,4 +5,7 @@ interface ElectronAPI {
 
 interface Window {
   electronAPI?: ElectronAPI
+  __ENV__?: {
+    VITE_API_URL?: string
+  }
 }
