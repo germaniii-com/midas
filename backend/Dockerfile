@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 ENV PYTHON=/usr/bin/python3
-RUN apk add --no-cache python3 py3-pip make g++
+RUN apk add --no-cache python3 make g++
 COPY package.json ./
 RUN npm install
 COPY . .
@@ -10,7 +10,7 @@ RUN npm run build
 FROM node:20-alpine AS dev
 WORKDIR /app
 ENV PYTHON=/usr/bin/python3
-RUN apk add --no-cache python3 py3-pip make g++
+RUN apk add --no-cache python3 make g++
 RUN mkdir -p /data && chown -R 1000:1000 /data
 COPY package.json ./
 RUN npm install
@@ -26,9 +26,9 @@ WORKDIR /app
 RUN mkdir -p /data && chown -R 1000:1000 /data
 ENV NODE_ENV=production
 ENV PYTHON=/usr/bin/python3
-RUN apk add --no-cache python3 py3-pip make g++
+RUN apk add --no-cache python3 make g++
 COPY package.json ./
-RUN npm install --omit=dev && npm rebuild && apk del python3 py3-pip make g++
+RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 COPY entrypoint.sh /entrypoint.sh
