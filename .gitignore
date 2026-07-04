@@ -10,3 +10,4 @@ desktop/out/
 desktop/release/
 desktop/release-backend-deps/
 midas.db*
+.DS_Store

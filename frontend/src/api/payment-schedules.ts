@@ -1,4 +1,4 @@
-import { API_URL, apiFetch } from '.';
+import { getApiUrl, apiFetch } from '.';
 
 export interface PaymentSchedule {
   id: string;
@@ -107,7 +107,7 @@ export async function getPaymentSchedules(
   if (includeInactive) params.set('includeInactive', 'true');
   const qs = params.toString();
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/payment-schedules${qs ? `?${qs}` : ''}`,
+    `${getApiUrl()}/api/binders/${binderId}/payment-schedules${qs ? `?${qs}` : ''}`,
   );
   if (!res.ok) throw new Error('Failed to fetch payment schedules');
   return res.json();
@@ -118,7 +118,7 @@ export async function getPaymentSchedule(
   scheduleId: string,
 ): Promise<PaymentSchedule> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/payment-schedules/${scheduleId}`,
+    `${getApiUrl()}/api/binders/${binderId}/payment-schedules/${scheduleId}`,
   );
   if (!res.ok) throw new Error('Payment schedule not found');
   return res.json();
@@ -149,7 +149,7 @@ export async function previewScheduleDates(
   if (params.endDate) qs.set('endDate', params.endDate);
   if (params.endOccurrences) qs.set('endOccurrences', String(params.endOccurrences));
   if (params.specificDays && params.specificDays.length > 0) qs.set('specificDays', params.specificDays.join(','));
-  const res = await apiFetch(`${API_URL}/api/binders/${binderId}/payment-schedules/preview?${qs}`);
+  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/payment-schedules/preview?${qs}`);
   if (!res.ok) throw new Error('Failed to preview dates');
   return res.json();
 }
@@ -159,7 +159,7 @@ export async function createPaymentSchedule(
   data: CreatePaymentScheduleData,
 ): Promise<PaymentSchedule> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/payment-schedules/create`,
+    `${getApiUrl()}/api/binders/${binderId}/payment-schedules/create`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -179,7 +179,7 @@ export async function updatePaymentSchedule(
   data: UpdatePaymentScheduleData,
 ): Promise<PaymentSchedule> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/payment-schedules/${scheduleId}`,
+    `${getApiUrl()}/api/binders/${binderId}/payment-schedules/${scheduleId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -209,7 +209,7 @@ export async function deletePaymentSchedule(
   scheduleId: string,
 ): Promise<void> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/payment-schedules/${scheduleId}`,
+    `${getApiUrl()}/api/binders/${binderId}/payment-schedules/${scheduleId}`,
     { method: 'DELETE' },
   );
   if (!res.ok) throw new Error('Failed to delete payment schedule');
@@ -221,7 +221,7 @@ export async function paySchedule(
   isExpense?: boolean,
 ): Promise<PayResult> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/payment-schedules/${scheduleId}/pay`,
+    `${getApiUrl()}/api/binders/${binderId}/payment-schedules/${scheduleId}/pay`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -236,7 +236,7 @@ export async function paySchedule(
 }
 
 export async function getUpcomingSchedules(binderId: string): Promise<UpcomingSchedule[]> {
-  const res = await apiFetch(`${API_URL}/api/binders/${binderId}/payment-schedules/upcoming`);
+  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/payment-schedules/upcoming`);
   if (!res.ok) throw new Error('Failed to fetch upcoming schedules');
   return res.json();
 }

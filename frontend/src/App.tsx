@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PreferencesProvider } from "./hooks/usePreferences";
-import HomePage from "./pages/home";
+import { ServerProvider } from "./hooks/useServer";
+import RootPage from "./pages/root";
 import CreateBinder from "./pages/create-binder";
 import BinderLayout from "./pages/binder/BinderLayout";
 import AccountsPage from "./pages/binder/accounts";
@@ -28,9 +29,10 @@ import ToolsPage from "./pages/binder/tools";
 
 export default function App() {
   return (
-    <PreferencesProvider>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
+    <ServerProvider>
+      <PreferencesProvider>
+        <Routes>
+          <Route path="/" element={<RootPage />} />
         <Route path="/create" element={<CreateBinder />} />
         <Route path="/binders/:id" element={<BinderLayout />}>
           <Route index element={<Navigate to="accounts" replace />} />
@@ -60,5 +62,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </PreferencesProvider>
+    </ServerProvider>
   );
 }

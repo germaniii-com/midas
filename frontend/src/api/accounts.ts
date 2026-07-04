@@ -1,4 +1,4 @@
-import { API_URL, apiFetch } from '.';
+import { getApiUrl, apiFetch } from '.';
 
 export interface CategoryInfo {
   id: string;
@@ -34,7 +34,7 @@ export interface UpdateAccountData {
 }
 
 export async function getAccounts(binderId: string): Promise<{ accounts: Account[]; categorySums: CategorySum[] }> {
-  const res = await apiFetch(`${API_URL}/api/binders/${binderId}/accounts`);
+  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/accounts`);
   if (!res.ok) throw new Error('Failed to fetch accounts');
   return res.json();
 }
@@ -44,7 +44,7 @@ export async function getAccount(
   accountId: string,
 ): Promise<Account> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/accounts/${accountId}`,
+    `${getApiUrl()}/api/binders/${binderId}/accounts/${accountId}`,
   );
   if (!res.ok) throw new Error('Account not found');
   return res.json();
@@ -55,7 +55,7 @@ export async function createAccount(
   data: CreateAccountData,
 ): Promise<Account> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/accounts/create`,
+    `${getApiUrl()}/api/binders/${binderId}/accounts/create`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,7 +77,7 @@ export async function updateAccount(
   data: UpdateAccountData,
 ): Promise<Account> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/accounts/${accountId}`,
+    `${getApiUrl()}/api/binders/${binderId}/accounts/${accountId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export async function deleteAccount(
   accountId: string,
 ): Promise<void> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/accounts/${accountId}`,
+    `${getApiUrl()}/api/binders/${binderId}/accounts/${accountId}`,
     { method: 'DELETE' },
   );
   if (!res.ok) throw new Error('Failed to delete account');

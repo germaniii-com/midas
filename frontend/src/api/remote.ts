@@ -1,4 +1,4 @@
-import { API_URL, apiFetch } from '.';
+import { getApiUrl, apiFetch } from '.';
 import type { Binder } from './binders';
 
 export interface RemoteBinder {
@@ -24,7 +24,7 @@ export async function listRemoteBinders(
   host: string,
   password: string,
 ): Promise<ListRemoteBindersResponse> {
-  const res = await apiFetch(`${API_URL}/api/remote/list-binders`, {
+  const res = await apiFetch(`${getApiUrl()}/api/remote/list-binders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ host, password }),
@@ -39,7 +39,7 @@ export async function listRemoteBinders(
 export async function pullRemoteBinder(
   data: PullRemoteBinderData,
 ): Promise<Binder> {
-  const res = await apiFetch(`${API_URL}/api/remote/pull-binder`, {
+  const res = await apiFetch(`${getApiUrl()}/api/remote/pull-binder`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

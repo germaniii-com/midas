@@ -1,4 +1,4 @@
-import { API_URL, apiFetch } from '.';
+import { getApiUrl, apiFetch } from '.';
 
 export interface TransactionAttachment {
   id: string;
@@ -13,7 +13,7 @@ export async function getAttachments(
   transactionId: string,
 ): Promise<TransactionAttachment[]> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/${transactionId}/attachments`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments`,
   );
   if (!res.ok) throw new Error('Failed to fetch attachments');
   return res.json();
@@ -27,7 +27,7 @@ export async function uploadAttachment(
   const formData = new FormData();
   formData.append('file', file);
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/${transactionId}/attachments`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments`,
     { method: 'POST', body: formData },
   );
   if (!res.ok) {
@@ -38,11 +38,11 @@ export async function uploadAttachment(
 }
 
 export function getAttachmentPreviewUrl(binderId: string, transactionId: string, attachmentId: string): string {
-  return `${API_URL}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}?preview=true`;
+  return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}?preview=true`;
 }
 
 export function getAttachmentThumbnailUrl(binderId: string, transactionId: string, attachmentId: string): string {
-  return `${API_URL}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}/thumbnail`;
+  return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}/thumbnail`;
 }
 
 export async function deleteAttachment(
@@ -51,7 +51,7 @@ export async function deleteAttachment(
   attachmentId: string,
 ): Promise<void> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}`,
     { method: 'DELETE' },
   );
   if (!res.ok) throw new Error('Failed to delete attachment');

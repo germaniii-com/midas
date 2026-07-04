@@ -1,10 +1,6 @@
-const electronApi = typeof window !== 'undefined' ? window.electronAPI : undefined;
+import { getServerPassword } from './serverConfig';
 
-const runtimeEnv = typeof window !== 'undefined' ? window.__ENV__ : undefined;
-
-export const API_URL = electronApi?.isElectron
-  ? electronApi.getApiUrl
-  : runtimeEnv?.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:5001';
+export { getApiUrl, getServerUrl, getServerPassword, setServerUrl, setServerPassword, clearServer, getRecentServers, addRecentServer } from './serverConfig';
 
 export class NetworkError extends Error {
   constructor() {
@@ -15,7 +11,12 @@ export class NetworkError extends Error {
 
 export async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
   try {
-    const res = await fetch(url, options);
+    const pw = getServerPassword();
+    const headers = new Headers(options?.headers);
+    if (pw) {
+      headers.set('x-sync-password', pw);
+    }
+    const res = await fetch(url, { ...options, headers });
     return res;
   } catch {
     throw new NetworkError();

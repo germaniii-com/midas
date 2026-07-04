@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, CardBody, Spinner } from '@heroui/react';
+import { Button, Card, CardBody, Spinner, Tooltip } from '@heroui/react';
 import { PlusIcon, ArrowUpTrayIcon, CloudArrowDownIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { getBinders, type Binder } from '../../api/binders';
 import { getErrorMessage } from '../../utils/toast';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useTheme } from '../../hooks/useTheme';
+import { useServer } from '../../hooks/useServer';
 import BinderCard from './components/BinderCard';
 import BinderLoginModal from './components/BinderLoginModal';
 import BinderImportModal from './components/BinderImportModal';
@@ -13,6 +14,7 @@ import PullRemoteModal from './components/PullRemoteModal';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { apiUrl, disconnect } = useServer();
   const [binders, setBinders] = useState<Binder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,15 +63,46 @@ export default function HomePage() {
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold sm:text-3xl">Midas</h1>
-        <Button
-          isIconOnly
-          variant="light"
-          onPress={toggle}
-          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          className="active:scale-90 transition-all duration-150"
-        >
-          {theme === 'light' ? <MoonIcon width={18} /> : <SunIcon width={18} />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Tooltip content={
+            <div className="text-xs">
+              <p className="font-medium mb-1">Connected to server</p>
+              <p className="opacity-75">{apiUrl}</p>
+              <Button
+                variant="light"
+                size="sm"
+                onPress={() => {
+                  if (window.confirm('Disconnect from server?')) {
+                    disconnect();
+                    navigate('/');
+                  }
+                }}
+                className="text-danger mt-1 h-auto min-w-0 p-0 text-xs"
+              >
+                Disconnect
+              </Button>
+            </div>
+          }>
+            <Button
+              variant="light"
+              size="sm"
+              className="text-xs text-app-muted h-8 px-2 active:scale-90 transition-all duration-150"
+            >
+              {(() => {
+                try { return new URL(apiUrl).hostname; } catch { return apiUrl; }
+              })()}
+            </Button>
+          </Tooltip>
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={toggle}
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            className="active:scale-90 transition-all duration-150"
+          >
+            {theme === 'light' ? <MoonIcon width={18} /> : <SunIcon width={18} />}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

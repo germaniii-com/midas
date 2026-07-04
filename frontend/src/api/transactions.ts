@@ -1,4 +1,4 @@
-import { API_URL, apiFetch } from '.';
+import { getApiUrl, apiFetch } from '.';
 
 export interface TransactionTag {
   id: string;
@@ -70,7 +70,7 @@ export async function getTransactions(
   if (offset !== undefined) params.set('offset', String(offset));
   const qs = params.toString();
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions${qs ? `?${qs}` : ''}`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions${qs ? `?${qs}` : ''}`,
   );
   if (!res.ok) throw new Error('Failed to fetch transactions');
   return res.json();
@@ -81,7 +81,7 @@ export async function getTransaction(
   transactionId: string,
 ): Promise<Transaction> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/${transactionId}`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}`,
   );
   if (!res.ok) throw new Error('Transaction not found');
   return res.json();
@@ -92,7 +92,7 @@ export async function createTransaction(
   data: CreateTransactionData,
 ): Promise<Transaction> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/create`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/create`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -114,7 +114,7 @@ export async function updateTransaction(
   data: UpdateTransactionData,
 ): Promise<Transaction> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/${transactionId}`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -135,7 +135,7 @@ export async function deleteTransaction(
   transactionId: string,
 ): Promise<void> {
   const res = await apiFetch(
-    `${API_URL}/api/binders/${binderId}/transactions/${transactionId}`,
+    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}`,
     { method: 'DELETE' },
   );
   if (!res.ok) throw new Error('Failed to delete transaction');
