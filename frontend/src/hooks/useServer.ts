@@ -36,14 +36,26 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   const [apiUrl, setApiUrl] = useState(getApiUrl);
 
   const connect = useCallback(async (url: string, password?: string) => {
-    const normalizedUrl = url.replace(/\/+$/, '');
+    const normalizedUrl = url.replace(/\/+$/, '').replace(/\/api$/, '');
 
-    const res = await fetch(`${normalizedUrl}/api/health`, {
-      signal: AbortSignal.timeout(10000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${normalizedUrl}/api/health`, {
+        signal: AbortSignal.timeout(10000),
+        redirect: 'error',
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'TimeoutError') {
+        throw new Error('Connection timed out. Check the URL and ensure the server is running.');
+      }
+      if (err instanceof TypeError) {
+        throw new Error('Cannot connect to server. The server may require authentication (e.g., Cloudflare Access) or the URL is incorrect.');
+      }
+      throw new Error('Failed to connect to server.');
+    }
 
     if (!res.ok) {
-      throw new Error('Cannot connect to server. Check the URL and ensure it is running.');
+      throw new Error('Server returned an error. Check the URL and ensure it is running.');
     }
 
     setServerUrl(normalizedUrl);

@@ -30,7 +30,7 @@ export function getServerUrl(): string | null {
 }
 
 export function setServerUrl(url: string): void {
-  localStorage.setItem(STORAGE_URL_KEY, url.replace(/\/+$/, ''));
+  localStorage.setItem(STORAGE_URL_KEY, url.replace(/\/+$/, '').replace(/\/api$/, ''));
 }
 
 export function getServerPassword(): string | null {
@@ -60,7 +60,8 @@ export function getRecentServers(): RecentServer[] {
 }
 
 export function addRecentServer(url: string): void {
-  const servers = getRecentServers().filter((s) => s.url !== url);
-  servers.unshift({ url: url.replace(/\/+$/, ''), lastConnected: new Date().toISOString() });
+  const normalized = url.replace(/\/+$/, '').replace(/\/api$/, '');
+  const servers = getRecentServers().filter((s) => s.url !== normalized);
+  servers.unshift({ url: normalized, lastConnected: new Date().toISOString() });
   localStorage.setItem(STORAGE_RECENT_KEY, JSON.stringify(servers.slice(0, 5)));
 }
