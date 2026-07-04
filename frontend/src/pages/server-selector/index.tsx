@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button, Input, Card, CardBody, Spinner } from '@heroui/react';
 import { EyeIcon, EyeSlashIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../hooks/useTheme';
@@ -13,14 +13,6 @@ export default function ServerSelector() {
   const [showPassword, setShowPassword] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!url) {
-      const runtimeEnv = typeof window !== 'undefined' ? window.__ENV__ : undefined;
-      const defaultUrl = runtimeEnv?.VITE_API_URL || import.meta.env.VITE_API_URL || '';
-      if (defaultUrl) setUrl(defaultUrl);
-    }
-  }, []);
 
   async function handleConnect(connectUrl?: string, connectPassword?: string) {
     const targetUrl = connectUrl || url;
