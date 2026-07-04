@@ -38,11 +38,17 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   const connect = useCallback(async (url: string, password?: string) => {
     const normalizedUrl = url.replace(/\/+$/, '').replace(/\/api$/, '');
 
+    const headers = new Headers();
+    if (password) {
+      headers.set('x-sync-password', password);
+    }
+
     let res: Response;
     try {
       res = await fetch(`${normalizedUrl}/api/health`, {
         signal: AbortSignal.timeout(10000),
         redirect: 'error',
+        headers,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === 'TimeoutError') {
@@ -52,6 +58,10 @@ export function ServerProvider({ children }: { children: ReactNode }) {
         throw new Error('Cannot connect to server. The server may require authentication (e.g., Cloudflare Access) or the URL is incorrect.');
       }
       throw new Error('Failed to connect to server.');
+    }
+
+    if (res.status === 401) {
+      throw new Error('Invalid server password.');
     }
 
     if (!res.ok) {

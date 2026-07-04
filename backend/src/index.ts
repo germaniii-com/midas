@@ -30,6 +30,16 @@ app.register(multipart, {
 });
 
 async function routes(app: FastifyInstance) {
+  app.addHook('onRequest', async (req, reply) => {
+    const serverPassword = process.env.SERVER_PASSWORD;
+    if (!serverPassword) return;
+
+    const password = req.headers['x-sync-password'];
+    if (!password || String(password) !== serverPassword) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+  });
+
   app.get('/health', async (_req, _reply) => {
     return { status: 'ok' };
   });
