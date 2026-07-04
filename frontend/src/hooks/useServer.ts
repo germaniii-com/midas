@@ -36,7 +36,8 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   const [apiUrl, setApiUrl] = useState(getApiUrl);
 
   const connect = useCallback(async (url: string, password?: string) => {
-    const normalizedUrl = url.replace(/\/+$/, '').replace(/\/api$/, '');
+    const rawUrl = url.replace(/\/+$/, '');
+    const apiBase = rawUrl.replace(/\/api$/, '');
 
     const headers = new Headers();
     if (password) {
@@ -45,7 +46,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
 
     let res: Response;
     try {
-      res = await fetch(`${normalizedUrl}/api/health`, {
+      res = await fetch(`${apiBase}/api/health`, {
         signal: AbortSignal.timeout(10000),
         redirect: 'error',
         headers,
@@ -68,15 +69,15 @@ export function ServerProvider({ children }: { children: ReactNode }) {
       throw new Error('Server returned an error. Check the URL and ensure it is running.');
     }
 
-    setServerUrl(normalizedUrl);
+    setServerUrl(rawUrl);
     if (password) {
       setServerPassword(password);
     } else {
       setServerPassword('');
     }
-    addRecentServer(normalizedUrl);
+    addRecentServer(rawUrl);
 
-    setApiUrl(normalizedUrl);
+    setApiUrl(rawUrl);
     setRecentServers(getRecentServers());
     setConnected(true);
   }, []);
