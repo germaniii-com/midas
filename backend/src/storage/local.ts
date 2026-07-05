@@ -4,7 +4,7 @@ import { homedir, platform } from 'os';
 import { existsSync } from 'fs';
 import { StorageProvider } from './types';
 
-function getDataDir(): string {
+function getPlatformDataDir(): string {
   const platformName = platform();
   const home = homedir();
 
@@ -16,6 +16,14 @@ function getDataDir(): string {
     return join(home, 'Library', 'Application Support', 'Midas', 'data');
   }
   return join(home, '.local', 'share', 'Midas', 'data');
+}
+
+function getDataDir(): string {
+  if (process.env.SERVER_PASSWORD) {
+    const dbDir = process.env.DATABASE_DIR || join(__dirname, '../../sqlite_data');
+    return join(dbDir, 'attachments');
+  }
+  return getPlatformDataDir();
 }
 
 const DATA_DIR = getDataDir();
