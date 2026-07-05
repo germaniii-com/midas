@@ -232,19 +232,21 @@ export default function TransactionsPage() {
         </Button>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">
-          {categoryName ? `Transactions — ${categoryName}` : 'Transactions'}
+      <div className="flex items-start justify-between mb-6 gap-2 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">
+            {categoryName || 'Transactions'}
+          </h1>
           {categoryName && (
             <span
-              className={`ml-3 text-lg font-semibold ${
+              className={`text-base sm:text-lg font-semibold ${
                 runningBalance >= 0 ? 'text-success' : 'text-danger'
               }`}
             >
               <Money amount={runningBalance} currency={currency} locale={numberLocale} />
             </span>
           )}
-        </h1>
+        </div>
         <Button
           color="primary"
           onPress={() =>
@@ -253,8 +255,21 @@ export default function TransactionsPage() {
             )
           }
           startContent={<PlusIcon width={18} />}
+          className="hidden sm:flex"
         >
           Add Transaction
+        </Button>
+        <Button
+          isIconOnly
+          color="primary"
+          onPress={() =>
+            navigate(
+              `/binders/${id}/transactions/create${categoryId ? `?categoryId=${categoryId}` : ''}`,
+            )
+          }
+          className="sm:hidden"
+        >
+          <PlusIcon width={18} />
         </Button>
       </div>
 

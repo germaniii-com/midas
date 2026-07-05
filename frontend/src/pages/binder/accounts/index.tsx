@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Card, CardBody, Spinner, Tabs, Tab } from '@heroui/react';
-import { PlusIcon, ChevronRightIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { Button, Card, CardBody, Spinner } from '@heroui/react';
+import { PlusIcon, ChevronRightIcon, EyeIcon, EyeSlashIcon, ListBulletIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 import { getAccounts, type Account, type CategorySum } from '../../../api/accounts';
 import { typeLabels } from '../../../constants/accountTypes';
 import { getErrorMessage } from '../../../utils/toast';
@@ -125,21 +125,30 @@ export default function AccountsPage() {
           >
             {showMoney ? <EyeIcon width={20} /> : <EyeSlashIcon width={20} />}
           </Button>
-          <Tabs
-            selectedKey={viewMode}
-            onSelectionChange={(key) => setViewMode(key as 'index' | 'grouped')}
-            variant="solid"
+          <Button
+            variant="flat"
             size="sm"
+            onPress={() => setViewMode(viewMode === 'index' ? 'grouped' : 'index')}
+            startContent={viewMode === 'index' ? <RectangleGroupIcon width={16} /> : <ListBulletIcon width={16} />}
+            className="min-w-0"
           >
-            <Tab key="index" title="All" />
-            <Tab key="grouped" title="Grouped" />
-          </Tabs>
+            <span className="hidden sm:inline">{viewMode === 'index' ? 'Grouped' : 'All'}</span>
+          </Button>
           <Button
             color="primary"
             onPress={() => navigate(`/binders/${id}/accounts/create`)}
             startContent={<PlusIcon width={18} />}
+            className="hidden sm:flex"
           >
             Add Account
+          </Button>
+          <Button
+            isIconOnly
+            color="primary"
+            onPress={() => navigate(`/binders/${id}/accounts/create`)}
+            className="sm:hidden"
+          >
+            <PlusIcon width={18} />
           </Button>
         </div>
       </div>

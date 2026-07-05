@@ -195,33 +195,53 @@ export default function AccountTransactionsPage() {
         Back to Accounts
       </Button>
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">
-          {account ? account.name : 'Transactions'}
+      <div className="flex items-start justify-between mb-6 gap-2 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">
+            {account ? account.name : 'Transactions'}
+          </h1>
           {account && (
             <span
-              className={`ml-3 text-lg font-semibold ${
+              className={`text-base sm:text-lg font-semibold ${
                 parseFloat(account.balance) >= 0 ? 'text-success' : 'text-danger'
               }`}
             >
               <Money amount={parseFloat(account.balance)} currency={currency} locale={numberLocale} />
             </span>
           )}
-        </h1>
-        <div className="flex items-center gap-2">
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="light"
             onPress={() => navigate(`/binders/${id}/accounts/${accountId}`)}
             startContent={<PencilIcon width={16} />}
+            className="hidden sm:flex"
           >
             Edit Account
+          </Button>
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={() => navigate(`/binders/${id}/accounts/${accountId}`)}
+            className="sm:hidden"
+          >
+            <PencilIcon width={16} />
           </Button>
           <Button
             color="primary"
             onPress={() => navigate(`/binders/${id}/transactions/create?accountId=${accountId}`)}
             startContent={<PlusIcon width={18} />}
+            className="hidden sm:flex"
           >
             Add Transaction
+          </Button>
+          <Button
+            isIconOnly
+            color="primary"
+            onPress={() => navigate(`/binders/${id}/transactions/create?accountId=${accountId}`)}
+            className="sm:hidden"
+          >
+            <PlusIcon width={18} />
           </Button>
         </div>
       </div>
