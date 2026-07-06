@@ -34,7 +34,8 @@ async function routes(app: FastifyInstance) {
     const serverPassword = process.env.SERVER_PASSWORD;
     if (!serverPassword) return;
 
-    const password = req.headers['x-sync-password'];
+    const query = req.query as Record<string, string | string[] | undefined>;
+    const password = (req.headers['x-sync-password'] as string) || (query['auth'] as string);
     if (!password || String(password) !== serverPassword) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }

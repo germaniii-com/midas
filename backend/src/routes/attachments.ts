@@ -110,7 +110,12 @@ export async function attachmentRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: 'Attachment not found' });
       }
 
-      const buffer = await storage.getFile(attachment.objectName);
+      let buffer: Buffer;
+      try {
+        buffer = await storage.getFile(attachment.objectName);
+      } catch {
+        return reply.status(404).send({ error: 'File not found in storage' });
+      }
 
       return reply
         .header('Content-Type', attachment.mimeType || 'application/octet-stream')

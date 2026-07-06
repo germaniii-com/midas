@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { getApiUrl, apiFetch, getServerPassword } from '.';
 
 export interface TransactionAttachment {
   id: string;
@@ -38,11 +38,15 @@ export async function uploadAttachment(
 }
 
 export function getAttachmentPreviewUrl(binderId: string, transactionId: string, attachmentId: string): string {
-  return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}?preview=true`;
+  const pw = getServerPassword();
+  const auth = pw ? `&auth=${encodeURIComponent(pw)}` : '';
+  return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}?preview=true${auth}`;
 }
 
 export function getAttachmentThumbnailUrl(binderId: string, transactionId: string, attachmentId: string): string {
-  return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}/thumbnail`;
+  const pw = getServerPassword();
+  const auth = pw ? `?auth=${encodeURIComponent(pw)}` : '';
+  return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}/thumbnail${auth}`;
 }
 
 export async function deleteAttachment(
