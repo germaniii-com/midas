@@ -238,10 +238,19 @@ export default function EditPaymentSchedulePage() {
           <div className="flex items-center gap-2">
             <Button
               isIconOnly
+              variant="solid"
+              color={isExpense ? 'danger' : 'success'}
+              onPress={() => setIsExpense(!isExpense)}
+              className="sm:hidden text-lg font-bold w-12 h-12 active:scale-90 transition-all duration-150"
+            >
+              {isExpense ? '−' : '+'}
+            </Button>
+            <Button
+              isIconOnly
               variant={isExpense ? 'solid' : 'light'}
               color={isExpense ? 'danger' : 'default'}
               onPress={() => setIsExpense(true)}
-              className="text-xl font-bold w-14 h-14"
+              className="hidden sm:flex text-xl font-bold w-14 h-14 active:scale-90 transition-all duration-150"
             >
               −
             </Button>
@@ -252,10 +261,10 @@ export default function EditPaymentSchedulePage() {
               placeholder="0.00"
               value={amount}
               onValueChange={(v) => { setAmount(v); setError(''); }}
-              className="w-64"
+              className="w-36 sm:w-64"
               classNames={{
-                input: 'text-center text-3xl font-bold tabular-nums',
-                inputWrapper: 'h-14',
+                input: 'text-center text-2xl sm:text-3xl font-bold tabular-nums',
+                inputWrapper: 'h-12 sm:h-14 transition-all duration-150',
               }}
             />
             <Button
@@ -263,7 +272,7 @@ export default function EditPaymentSchedulePage() {
               variant={!isExpense ? 'solid' : 'light'}
               color={!isExpense ? 'success' : 'default'}
               onPress={() => setIsExpense(false)}
-              className="text-xl font-bold w-14 h-14"
+              className="hidden sm:flex text-xl font-bold w-14 h-14 active:scale-90 transition-all duration-150"
             >
               +
             </Button>
