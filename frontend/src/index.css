@@ -17,7 +17,18 @@
   --color-border: #e4e4e7;
 }
 
-.dark {
+/* Light */
+[data-theme="light"] {
+  --color-surface: #f4f4f5;
+  --color-surface-secondary: #ffffff;
+  --color-background: #e4e4e7;
+  --color-text: #18181b;
+  --color-text-muted: #71717a;
+  --color-border: #e4e4e7;
+}
+
+/* Dark */
+[data-theme="dark"] {
   --color-surface: #09090b;
   --color-surface-secondary: #18181b;
   --color-background: #27272a;
@@ -26,9 +37,114 @@
   --color-border: #27272a;
 }
 
-:root {
-  --color-text-muted: #71717a;
-  --color-border: #e4e4e7;
+/* Catppuccin Latte */
+[data-theme="catppuccin-latte"] {
+  --color-surface: #eff1f5;
+  --color-surface-secondary: #e6e9ef;
+  --color-background: #dce0e8;
+  --color-text: #4c4f69;
+  --color-text-muted: #6c6f85;
+  --color-border: #ccd0da;
+}
+
+/* Catppuccin Frappé */
+[data-theme="catppuccin-frappe"] {
+  --color-surface: #303446;
+  --color-surface-secondary: #292c3c;
+  --color-background: #232634;
+  --color-text: #c6d0f5;
+  --color-text-muted: #a5adce;
+  --color-border: #414559;
+}
+
+/* Catppuccin Macchiato */
+[data-theme="catppuccin-macchiato"] {
+  --color-surface: #24273a;
+  --color-surface-secondary: #1e2030;
+  --color-background: #181926;
+  --color-text: #cad3f5;
+  --color-text-muted: #a5adcb;
+  --color-border: #363a4f;
+}
+
+/* Catppuccin Mocha */
+[data-theme="catppuccin-mocha"] {
+  --color-surface: #1e1e2e;
+  --color-surface-secondary: #181825;
+  --color-background: #11111b;
+  --color-text: #cdd6f4;
+  --color-text-muted: #a6adc8;
+  --color-border: #313244;
+}
+
+/* Dracula */
+[data-theme="dracula"] {
+  --color-surface: #282a36;
+  --color-surface-secondary: #44475a;
+  --color-background: #21222c;
+  --color-text: #f8f8f2;
+  --color-text-muted: #6272a4;
+  --color-border: #44475a;
+}
+
+/* Nord */
+[data-theme="nord"] {
+  --color-surface: #2e3440;
+  --color-surface-secondary: #3b4252;
+  --color-background: #434c5e;
+  --color-text: #eceff4;
+  --color-text-muted: #81a1c1;
+  --color-border: #4c566a;
+}
+
+/* Solarized Light */
+[data-theme="solarized-light"] {
+  --color-surface: #fdf6e3;
+  --color-surface-secondary: #eee8d5;
+  --color-background: #eee8d5;
+  --color-text: #657b83;
+  --color-text-muted: #93a1a1;
+  --color-border: #d5cfa4;
+}
+
+/* Solarized Dark */
+[data-theme="solarized-dark"] {
+  --color-surface: #002b36;
+  --color-surface-secondary: #073642;
+  --color-background: #073642;
+  --color-text: #839496;
+  --color-text-muted: #586e75;
+  --color-border: #073642;
+}
+
+/* One Dark Pro */
+[data-theme="one-dark-pro"] {
+  --color-surface: #282c34;
+  --color-surface-secondary: #21252b;
+  --color-background: #181a1f;
+  --color-text: #abb2bf;
+  --color-text-muted: #5c6370;
+  --color-border: #3e4452;
+}
+
+/* GitHub Light */
+[data-theme="github-light"] {
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f6f8fa;
+  --color-background: #e8ecf0;
+  --color-text: #1f2328;
+  --color-text-muted: #656d76;
+  --color-border: #d0d7de;
+}
+
+/* GitHub Dark */
+[data-theme="github-dark"] {
+  --color-surface: #0d1117;
+  --color-surface-secondary: #161b22;
+  --color-background: #21262d;
+  --color-text: #e6edf3;
+  --color-text-muted: #8b949e;
+  --color-border: #30363d;
 }
 
 body {

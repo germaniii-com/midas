@@ -1,12 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
-
-type Theme = 'light' | 'dark';
+import { useState, useEffect } from 'react';
+import type { Theme } from '../constants/preferences';
+import { DARK_THEMES, THEME_OPTIONS } from '../constants/preferences';
 
 export const STORAGE_KEY = 'midas-theme';
 
+const VALID_THEMES = new Set(THEME_OPTIONS.map((o) => o.value));
+
+function isValidTheme(value: string): value is Theme {
+  return VALID_THEMES.has(value as Theme);
+}
+
 export function getInitialTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') return stored;
+  if (stored && isValidTheme(stored)) return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -14,13 +20,10 @@ export function useTheme() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', DARK_THEMES.includes(theme));
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  const toggle = useCallback(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  }, []);
-
-  return { theme, toggle };
+  return { theme, setTheme };
 }

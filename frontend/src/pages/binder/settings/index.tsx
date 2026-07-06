@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Select, SelectItem, Button } from '@heroui/react';
-import { SunIcon, MoonIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../../hooks/useTheme';
 import { usePreferences } from '../../../hooks/usePreferences';
 import { exportBinder } from '../../../api/binders';
@@ -9,6 +9,7 @@ import {
   NUMBER_LOCALE_OPTIONS,
   DATE_FORMAT_OPTIONS,
   FIRST_DAY_OPTIONS,
+  THEME_OPTIONS,
 } from '../../../constants/preferences';
 import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import BinderImportModal from '../../home/components/BinderImportModal';
@@ -16,7 +17,7 @@ import SyncSection from './SyncSection';
 
 export default function SettingsPage() {
   const { id } = useParams<{ id: string }>();
-  const { theme, toggle } = useTheme();
+  const { theme, setTheme } = useTheme();
   const {
     numberLocale,
     dateFormat,
@@ -74,16 +75,21 @@ export default function SettingsPage() {
           style={{ backgroundColor: 'var(--color-surface-secondary)' }}
         >
           <h2 className="text-lg font-semibold mb-1">Theme</h2>
-          <p className="text-sm text-app-muted mb-3">Choose between light and dark mode</p>
-          <Button
-            variant="light"
-            onPress={toggle}
-            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg h-auto active:scale-[0.97] transition-all duration-200"
+          <p className="text-sm text-app-muted mb-3">Choose a color scheme</p>
+          <Select
+            label="Theme"
+            variant="flat"
+            selectedKeys={[theme]}
+            onSelectionChange={(keys) => {
+              const val = Array.from(keys)[0];
+              if (val) setTheme(String(val) as typeof theme);
+            }}
+            className="max-w-xs"
           >
-            {theme === 'light' ? <MoonIcon width={22} /> : <SunIcon width={22} />}
-            <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
-          </Button>
+            {THEME_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </Select>
         </section>
 
         {/* Display value format */}

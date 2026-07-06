@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Button, Input, Card, CardBody, Spinner } from '@heroui/react';
-import { EyeIcon, EyeSlashIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { Button, Input, Card, CardBody, Spinner, Select, SelectItem } from '@heroui/react';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../hooks/useTheme';
 import { useServer } from '../../hooks/useServer';
+import { THEME_OPTIONS } from '../../constants/preferences';
 import { getErrorMessage } from '../../utils/toast';
 
 export default function ServerSelector() {
-  const { theme, toggle } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { connect, recentServers } = useServer();
   const [url, setUrl] = useState('');
   const [password, setPassword] = useState('');
@@ -50,15 +51,21 @@ export default function ServerSelector() {
     <div className="mx-auto w-full max-w-md px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold sm:text-3xl">Midas</h1>
-        <Button
-          isIconOnly
-          variant="light"
-          onPress={toggle}
-          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          className="active:scale-90 transition-all duration-150"
+        <Select
+          size="sm"
+          variant="flat"
+          aria-label="Theme"
+          selectedKeys={[theme]}
+          onSelectionChange={(keys) => {
+            const val = Array.from(keys)[0];
+            if (val) setTheme(String(val) as typeof theme);
+          }}
+          className="w-[140px]"
         >
-          {theme === 'light' ? <MoonIcon width={18} /> : <SunIcon width={18} />}
-        </Button>
+          {THEME_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </Select>
       </div>
 
       <div className="flex flex-col gap-4 animate-fade-in-up">
