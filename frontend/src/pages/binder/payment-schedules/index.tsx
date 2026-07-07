@@ -101,7 +101,9 @@ export default function PaymentSchedulesPage() {
             <Table
               aria-label="Payment schedules"
               classNames={{
-                td: 'whitespace-nowrap',
+                wrapper: 'app-table-wrapper',
+                th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
+                td: 'whitespace-nowrap text-[var(--color-text)]',
               }}
             >
               <TableHeader>
@@ -125,7 +127,7 @@ export default function PaymentSchedulesPage() {
                     <TableRow
                       key={s.id}
                       className={`transition-colors duration-150 ${
-                        !s.isActive ? 'opacity-40' : 'hover:bg-default-50 dark:hover:bg-white/[0.03]'
+                        !s.isActive ? 'opacity-40' : 'hover:bg-[var(--color-background)]'
                       }`}
                     >
                       <TableCell className="font-medium">{s.name}</TableCell>

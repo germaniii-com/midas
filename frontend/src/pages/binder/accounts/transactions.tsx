@@ -258,7 +258,14 @@ export default function AccountTransactionsPage() {
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-3">Scheduled Payments</h2>
               <div className="hidden sm:block">
-                <Table aria-label="Upcoming payments">
+                <Table
+                  aria-label="Upcoming payments"
+                  classNames={{
+                    wrapper: 'app-table-wrapper',
+                    th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
+                    td: 'text-[var(--color-text)]',
+                  }}
+                >
                   <TableHeader>
                     <TableColumn key="due">Due</TableColumn>
                     <TableColumn key="schedule">Schedule</TableColumn>
@@ -288,7 +295,7 @@ export default function AccountTransactionsPage() {
                           : `In ${u.occurrence.daysUntilDue} day${u.occurrence.daysUntilDue !== 1 ? 's' : ''}`;
 
                       return (
-                        <TableRow key={`${u.schedule.id}-${u.occurrence.dueDate}`} className="transition-colors duration-150 hover:bg-default-50 dark:hover:bg-white/[0.03]">
+                        <TableRow key={`${u.schedule.id}-${u.occurrence.dueDate}`} className="transition-colors duration-150 hover:bg-[var(--color-background)]">
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <span className={`font-medium ${statusColors[u.occurrence.status] || ''}`}>
@@ -413,6 +420,11 @@ export default function AccountTransactionsPage() {
               <div className="hidden sm:block">
                 <Table
                   aria-label="Account transactions"
+                  classNames={{
+                    wrapper: 'app-table-wrapper',
+                    th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
+                    td: 'text-[var(--color-text)]',
+                  }}
                   onRowAction={(key) => {
                     navigate(`/binders/${id}/transactions/${key}`);
                   }}
@@ -431,7 +443,7 @@ export default function AccountTransactionsPage() {
                         <TableRow
                           key={tx.id}
                           className={`transition-colors duration-150 ${
-                            !tx.isCleared ? 'opacity-40' : 'hover:bg-default-50 dark:hover:bg-white/[0.03]'
+                            !tx.isCleared ? 'opacity-40' : 'hover:bg-[var(--color-background)]'
                           }`}
                         >
                           <TableCell>

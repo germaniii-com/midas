@@ -282,7 +282,14 @@ export default function TransactionsPage() {
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-3">Scheduled Payments</h2>
               <div className="hidden sm:block">
-                <Table aria-label="Upcoming payments">
+                <Table
+                  aria-label="Upcoming payments"
+                  classNames={{
+                    wrapper: 'app-table-wrapper',
+                    th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
+                    td: 'text-[var(--color-text)]',
+                  }}
+                >
                   <TableHeader>
                     <TableColumn key="due">Due</TableColumn>
                     <TableColumn key="schedule">Schedule</TableColumn>
@@ -320,7 +327,7 @@ export default function TransactionsPage() {
                       return (
                         <TableRow
                           key={`${u.schedule.id}-${u.occurrence.dueDate}`}
-                          className="transition-colors duration-150 hover:bg-default-50 dark:hover:bg-white/[0.03]"
+                          className="transition-colors duration-150 hover:bg-[var(--color-background)]"
                         >
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -453,6 +460,11 @@ export default function TransactionsPage() {
           <div className="hidden sm:block">
             <Table
               aria-label="Transactions"
+              classNames={{
+                wrapper: 'app-table-wrapper',
+                th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
+                td: 'text-[var(--color-text)]',
+              }}
               onRowAction={(key) => {
                 navigate(`/binders/${id}/transactions/${key}`);
               }}
@@ -478,7 +490,7 @@ export default function TransactionsPage() {
                       className={`transition-colors duration-150 ${
                         !tx.isCleared
                           ? 'opacity-40'
-                          : 'hover:bg-default-50 dark:hover:bg-white/[0.03]'
+                          : 'hover:bg-[var(--color-background)]'
                       }`}
                     >
                       <TableCell>

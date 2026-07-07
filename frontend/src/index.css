@@ -286,6 +286,20 @@ body {
   stroke: var(--color-border);
 }
 
+/* HeroUI table theming */
+.app-table-wrapper {
+  background-color: var(--color-surface-secondary) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: none !important;
+}
+.app-table-wrapper th {
+  background-color: var(--color-background) !important;
+  color: var(--color-text-muted) !important;
+}
+.app-table-wrapper td {
+  color: var(--color-text) !important;
+}
+
 @utility safe-top {
   padding-top: env(safe-area-inset-top);
 }
