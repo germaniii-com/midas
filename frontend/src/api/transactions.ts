@@ -56,13 +56,18 @@ export interface UpdateTransactionData {
   tagIds?: string[];
 }
 
+export interface GetTransactionsResponse {
+  transactions: Transaction[];
+  totalAmount: string;
+}
+
 export async function getTransactions(
   binderId: string,
   accountId?: string,
   categoryId?: string,
   limit?: number,
   offset?: number,
-): Promise<Transaction[]> {
+): Promise<GetTransactionsResponse> {
   const params = new URLSearchParams();
   if (accountId) params.set('accountId', accountId);
   if (categoryId) params.set('categoryId', categoryId);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Button,
@@ -54,6 +54,7 @@ export default function TransactionsPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const currency = useBinderCurrency();
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
+  const [totalAmount, setTotalAmount] = useState('0');
   const [upcoming, setUpcoming] = useState<UpcomingSchedule[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
 
@@ -93,18 +94,14 @@ export default function TransactionsPage() {
     }
   }
 
-  const runningBalance = useMemo(
-    () => transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0),
-    [transactions],
-  );
-
   async function fetchTransactions() {
     if (!id) return;
     setLoading(true);
     try {
       const data = await getTransactions(id, undefined, categoryId ?? undefined, 50, 0);
-      setTransactions(data);
-      setHasMore(data.length === 50);
+      setTransactions(data.transactions);
+      setTotalAmount(data.totalAmount);
+      setHasMore(data.transactions.length === 50);
       setError('');
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load transactions'));
@@ -124,8 +121,8 @@ export default function TransactionsPage() {
         50,
         transactions.length,
       );
-      setTransactions((prev) => [...prev, ...data]);
-      setHasMore(data.length === 50);
+      setTransactions((prev) => [...prev, ...data.transactions]);
+      setHasMore(data.transactions.length === 50);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load more transactions'));
     } finally {
@@ -240,10 +237,10 @@ export default function TransactionsPage() {
           {categoryName && (
             <span
               className={`text-base sm:text-lg font-semibold ${
-                runningBalance >= 0 ? 'text-success' : 'text-danger'
+                parseFloat(totalAmount) >= 0 ? 'text-success' : 'text-danger'
               }`}
             >
-              <Money amount={runningBalance} currency={currency} locale={numberLocale} />
+              <Money amount={parseFloat(totalAmount)} currency={currency} locale={numberLocale} />
             </span>
           )}
         </div>

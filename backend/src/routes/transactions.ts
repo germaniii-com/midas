@@ -50,12 +50,21 @@ export async function transactionRoutes(app: FastifyInstance) {
           .select({ accountId: accountCategories.accountId })
           .from(accountCategories)
           .where(eq(accountCategories.categoryId, categoryId));
-        if (catAccountRows.length === 0) return reply.send([]);
+        if (catAccountRows.length === 0) return reply.send({ transactions: [], totalAmount: '0' });
         filters.push(inArray(transactions.accountId, catAccountRows.map((r) => r.accountId)));
       }
 
       const counterpartTx = alias(transactions, 'counterpart_tx');
       const transferAccount = alias(accounts, 'transfer_account');
+
+      const [totalRow] = await db
+        .select({
+          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+        })
+        .from(transactions)
+        .where(and(...filters));
+
+      const totalAmount = totalRow?.total || '0';
 
       const rows = await db
         .select({
@@ -84,7 +93,7 @@ export async function transactionRoutes(app: FastifyInstance) {
         .offset(offset)
         .orderBy(sql`${transactions.date} DESC, ${transactions.createdAt} DESC`);
 
-      if (rows.length === 0) return reply.send([]);
+      if (rows.length === 0) return reply.send({ transactions: [], totalAmount });
 
       const txIds = rows.map((r) => r.id);
 
@@ -125,7 +134,7 @@ export async function transactionRoutes(app: FastifyInstance) {
         attachmentCount: attachmentCountByTxId[r.id] || 0,
       }));
 
-      return reply.send(result);
+      return reply.send({ transactions: result, totalAmount });
     },
   );
 

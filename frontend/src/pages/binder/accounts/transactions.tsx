@@ -47,12 +47,12 @@ export default function AccountTransactionsPage() {
     try {
       await paySchedule(id, scheduleId);
       toastSuccess('Payment applied');
-      const [txs, upcomingData] = await Promise.all([
+      const [res, upcomingData] = await Promise.all([
         getTransactions(id, accountId, undefined, 50, 0),
         getUpcomingSchedules(id),
       ]);
-      setTransactions(txs);
-      setHasMore(txs.length === 50);
+      setTransactions(res.transactions);
+      setHasMore(res.transactions.length === 50);
       setUpcoming(upcomingData.filter((u) => u.schedule.accountId === accountId));
     } catch {
       toastError('Failed to pay schedule');
@@ -138,9 +138,9 @@ export default function AccountTransactionsPage() {
     if (!id || !accountId || loadingMore) return;
     setLoadingMore(true);
     try {
-      const data = await getTransactions(id, accountId, undefined, 50, transactions.length);
-      setTransactions((prev) => [...prev, ...data]);
-      setHasMore(data.length === 50);
+      const res = await getTransactions(id, accountId, undefined, 50, transactions.length);
+      setTransactions((prev) => [...prev, ...res.transactions]);
+      setHasMore(res.transactions.length === 50);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load more transactions'));
     } finally {
@@ -154,15 +154,15 @@ export default function AccountTransactionsPage() {
     setError('');
     setHasMore(true);
     try {
-      const [acc, txs, p, upcomingData] = await Promise.all([
+      const [acc, res, p, upcomingData] = await Promise.all([
         getAccount(id, accountId),
         getTransactions(id, accountId, undefined, 50, 0),
         getPayees(id),
         getUpcomingSchedules(id),
       ]);
       setAccount(acc);
-      setTransactions(txs);
-      setHasMore(txs.length === 50);
+      setTransactions(res.transactions);
+      setHasMore(res.transactions.length === 50);
       setPayees(p);
       setUpcoming(upcomingData.filter((u) => u.schedule.accountId === accountId));
     } catch (err) {
