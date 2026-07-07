@@ -38,33 +38,23 @@ export async function attachmentRoutes(app: FastifyInstance) {
       const fileName = data.filename;
       let mimeType = data.mimetype || 'application/octet-stream';
 
+      const ext = fileName.includes('.') ? '.' + fileName.split('.').pop()!.toLowerCase() : '';
+
       const isImage = mimeType.startsWith('image/') && mimeType !== 'image/gif';
       if (isImage) {
         buffer = Buffer.from(await sharp(buffer).webp({ quality: 80 }).toBuffer());
         mimeType = 'image/webp';
       }
 
-      const existing = await db
-        .select({ id: transactionAttachments.id, objectName: transactionAttachments.objectName })
-        .from(transactionAttachments)
-        .where(
-          and(
-            eq(transactionAttachments.transactionId, transactionId),
-            eq(transactionAttachments.fileName, fileName),
-          ),
-        )
-        .limit(1);
-
-      if (existing.length > 0) {
-        return reply.status(409).send({ error: `A file named "${fileName}" already exists on this transaction` });
-      }
-
-      const objectName = storage.generateObjectName(binderId, transactionId, fileName);
+      const id = crypto.randomUUID();
+      const extension = isImage ? '.webp' : ext;
+      const objectName = storage.generateObjectName(binderId, transactionId, id, extension);
       await storage.uploadFile(objectName, buffer, mimeType);
 
       const [attachment] = await db
         .insert(transactionAttachments)
         .values({
+          id,
           transactionId,
           binderId,
           fileName,

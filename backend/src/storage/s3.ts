@@ -39,9 +39,8 @@ export const s3Provider: StorageProvider = {
     await minioClient.removeObject(BUCKET_NAME, objectName);
   },
 
-  generateObjectName(binderId: string, transactionId: string, fileName: string) {
-    const uniqueSuffix = crypto.randomUUID();
-    return `${binderId}/${transactionId}/${uniqueSuffix}-${fileName}`;
+  generateObjectName(binderId: string, transactionId: string, id: string, extension: string) {
+    return `${binderId}/${transactionId}/${id}${extension}`;
   },
 };
 
