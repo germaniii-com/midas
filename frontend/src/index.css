@@ -4,6 +4,9 @@
 @source "../../node_modules/@heroui/react/dist/**/*.js";
 @source "../node_modules/@heroui/theme/dist/**/*.js";
 @source "../node_modules/@heroui/react/dist/**/*.js";
+@source "./pages/**/*.{tsx,ts}";
+@source "./components/**/*.{tsx,ts}";
+@source "./hooks/**/*.{tsx,ts}";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -15,6 +18,8 @@
   --color-text: #18181b;
   --color-text-muted: #71717a;
   --color-border: #e4e4e7;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
 }
 
 /* Light */
@@ -25,6 +30,8 @@
   --color-text: #18181b;
   --color-text-muted: #71717a;
   --color-border: #e4e4e7;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
 }
 
 /* Dark */
@@ -35,6 +42,8 @@
   --color-text: #fafafa;
   --color-text-muted: #a1a1aa;
   --color-border: #27272a;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
 }
 
 /* Catppuccin Latte */
@@ -45,6 +54,8 @@
   --color-text: #4c4f69;
   --color-text-muted: #6c6f85;
   --color-border: #ccd0da;
+  --color-success: #40a02b;
+  --color-danger: #d20f39;
 }
 
 /* Catppuccin Frappé */
@@ -55,6 +66,8 @@
   --color-text: #c6d0f5;
   --color-text-muted: #a5adce;
   --color-border: #414559;
+  --color-success: #a6d189;
+  --color-danger: #e78284;
 }
 
 /* Catppuccin Macchiato */
@@ -65,6 +78,8 @@
   --color-text: #cad3f5;
   --color-text-muted: #a5adcb;
   --color-border: #363a4f;
+  --color-success: #a6da95;
+  --color-danger: #ed8796;
 }
 
 /* Catppuccin Mocha */
@@ -75,6 +90,8 @@
   --color-text: #cdd6f4;
   --color-text-muted: #a6adc8;
   --color-border: #313244;
+  --color-success: #a6e3a1;
+  --color-danger: #f38ba8;
 }
 
 /* Dracula */
@@ -85,6 +102,8 @@
   --color-text: #f8f8f2;
   --color-text-muted: #6272a4;
   --color-border: #44475a;
+  --color-success: #50fa7b;
+  --color-danger: #ff5555;
 }
 
 /* Nord */
@@ -95,6 +114,8 @@
   --color-text: #eceff4;
   --color-text-muted: #81a1c1;
   --color-border: #4c566a;
+  --color-success: #a3be8c;
+  --color-danger: #bf616a;
 }
 
 /* Solarized Light */
@@ -105,6 +126,8 @@
   --color-text: #657b83;
   --color-text-muted: #93a1a1;
   --color-border: #d5cfa4;
+  --color-success: #859900;
+  --color-danger: #dc322f;
 }
 
 /* Solarized Dark */
@@ -115,6 +138,8 @@
   --color-text: #839496;
   --color-text-muted: #586e75;
   --color-border: #073642;
+  --color-success: #859900;
+  --color-danger: #dc322f;
 }
 
 /* One Dark Pro */
@@ -125,6 +150,8 @@
   --color-text: #abb2bf;
   --color-text-muted: #5c6370;
   --color-border: #3e4452;
+  --color-success: #98c379;
+  --color-danger: #e06c75;
 }
 
 /* GitHub Light */
@@ -135,6 +162,8 @@
   --color-text: #1f2328;
   --color-text-muted: #656d76;
   --color-border: #d0d7de;
+  --color-success: #1a7f37;
+  --color-danger: #cf222e;
 }
 
 /* GitHub Dark */
@@ -145,6 +174,8 @@
   --color-text: #e6edf3;
   --color-text-muted: #8b949e;
   --color-border: #30363d;
+  --color-success: #3fb950;
+  --color-danger: #f85149;
 }
 
 body {
@@ -296,9 +327,7 @@ body {
   background-color: var(--color-background) !important;
   color: var(--color-text-muted) !important;
 }
-.app-table-wrapper td {
-  color: var(--color-text) !important;
-}
+
 
 @utility safe-top {
   padding-top: env(safe-area-inset-top);

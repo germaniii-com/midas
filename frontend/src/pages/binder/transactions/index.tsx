@@ -287,7 +287,7 @@ export default function TransactionsPage() {
                   classNames={{
                     wrapper: 'app-table-wrapper',
                     th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
-                    td: 'text-[var(--color-text)]',
+                    td: '',
                   }}
                 >
                   <TableHeader>
@@ -463,7 +463,7 @@ export default function TransactionsPage() {
               classNames={{
                 wrapper: 'app-table-wrapper',
                 th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
-                td: 'text-[var(--color-text)]',
+                td: '',
               }}
               onRowAction={(key) => {
                 navigate(`/binders/${id}/transactions/${key}`);

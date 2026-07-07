@@ -103,7 +103,7 @@ export default function PaymentSchedulesPage() {
               classNames={{
                 wrapper: 'app-table-wrapper',
                 th: 'bg-[var(--color-background)] text-[var(--color-text-muted)]',
-                td: 'whitespace-nowrap text-[var(--color-text)]',
+                td: 'whitespace-nowrap',
               }}
             >
               <TableHeader>
