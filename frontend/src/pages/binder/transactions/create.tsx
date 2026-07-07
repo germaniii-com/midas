@@ -30,7 +30,7 @@ export default function CreateTransactionPage() {
   const [tags, setTags] = useState<Tag[]>([]);
 
   const [isExpense, setIsExpense] = useState(true);
-  const [amount, setAmount] = useState('0');
+  const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [payeeId, setPayeeId] = useState('');
@@ -211,6 +211,7 @@ export default function CreateTransactionPage() {
             min="0"
             placeholder="0.00"
             value={amount}
+            onFocus={() => setAmount('')}
             onValueChange={(v) => {
               setAmount(v);
               setError('');
