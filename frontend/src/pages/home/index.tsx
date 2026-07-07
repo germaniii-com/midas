@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, CardBody, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem } from '@heroui/react';
+import { Button, Card, CardBody, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { PlusIcon, ArrowUpTrayIcon, CloudArrowDownIcon } from '@heroicons/react/24/outline';
 import { getBinders, type Binder } from '../../api/binders';
 import { getErrorMessage } from '../../utils/toast';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useTheme } from '../../hooks/useTheme';
 import { useServer } from '../../hooks/useServer';
-import { THEME_OPTIONS } from '../../constants/preferences';
+import ThemeSelectorButton from '../../components/ThemeSelectorButton';
 import BinderCard from './components/BinderCard';
 import BinderLoginModal from './components/BinderLoginModal';
 import BinderImportModal from './components/BinderImportModal';
@@ -66,21 +66,7 @@ export default function HomePage() {
                 try { return new URL(apiUrl).hostname; } catch { return apiUrl; }
               })()}
             </Button>
-            <Select
-              size="sm"
-              variant="flat"
-              aria-label="Theme"
-              selectedKeys={[theme]}
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0];
-                if (val) setTheme(String(val) as typeof theme);
-              }}
-              className="w-[140px]"
-            >
-              {THEME_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </Select>
+            <ThemeSelectorButton theme={theme} onSelect={setTheme} />
           </div>
         </div>
         <ErrorMessage message={error} onRetry={fetchBinders} />
@@ -103,21 +89,7 @@ export default function HomePage() {
               try { return new URL(apiUrl).hostname; } catch { return apiUrl; }
             })()}
           </Button>
-          <Select
-            size="sm"
-            variant="flat"
-            aria-label="Theme"
-            selectedKeys={[theme]}
-            onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0];
-              if (val) setTheme(String(val) as typeof theme);
-            }}
-            className="w-[140px]"
-          >
-            {THEME_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </Select>
+          <ThemeSelectorButton theme={theme} onSelect={setTheme} />
         </div>
       </div>
 

@@ -178,6 +178,138 @@
   --color-danger: #f85149;
 }
 
+/* Gruvbox Dark */
+[data-theme="gruvbox-dark"] {
+  --color-surface: #282828;
+  --color-surface-secondary: #3c3836;
+  --color-background: #1d2021;
+  --color-text: #ebdbb2;
+  --color-text-muted: #a89984;
+  --color-border: #504945;
+  --color-success: #b8bb26;
+  --color-danger: #fb4934;
+}
+
+/* Gruvbox Light */
+[data-theme="gruvbox-light"] {
+  --color-surface: #fbf1c7;
+  --color-surface-secondary: #f2e5bc;
+  --color-background: #ebdbb2;
+  --color-text: #3c3836;
+  --color-text-muted: #7c6f64;
+  --color-border: #d5c4a1;
+  --color-success: #98971a;
+  --color-danger: #cc241d;
+}
+
+/* Tokyo Night */
+[data-theme="tokyo-night"] {
+  --color-surface: #1a1b26;
+  --color-surface-secondary: #16161e;
+  --color-background: #13141c;
+  --color-text: #c0caf5;
+  --color-text-muted: #565f89;
+  --color-border: #292e42;
+  --color-success: #9ece6a;
+  --color-danger: #f7768e;
+}
+
+/* Monokai */
+[data-theme="monokai"] {
+  --color-surface: #272822;
+  --color-surface-secondary: #1e1f1c;
+  --color-background: #1a1b15;
+  --color-text: #f8f8f2;
+  --color-text-muted: #75715e;
+  --color-border: #3e3d32;
+  --color-success: #a6e22e;
+  --color-danger: #f92672;
+}
+
+/* Ayu Dark */
+[data-theme="ayu-dark"] {
+  --color-surface: #0b0e14;
+  --color-surface-secondary: #11151c;
+  --color-background: #0a0d13;
+  --color-text: #bfbdb6;
+  --color-text-muted: #5c6773;
+  --color-border: #1c2128;
+  --color-success: #7fd962;
+  --color-danger: #f07178;
+}
+
+/* Ayu Light */
+[data-theme="ayu-light"] {
+  --color-surface: #fafafa;
+  --color-surface-secondary: #f3f4f5;
+  --color-background: #ededed;
+  --color-text: #5c6166;
+  --color-text-muted: #8a9199;
+  --color-border: #e0e0e0;
+  --color-success: #6cbf43;
+  --color-danger: #e65050;
+}
+
+/* Everforest Dark */
+[data-theme="everforest-dark"] {
+  --color-surface: #2d353b;
+  --color-surface-secondary: #232a2e;
+  --color-background: #1e2326;
+  --color-text: #d3c6aa;
+  --color-text-muted: #859289;
+  --color-border: #475258;
+  --color-success: #a7c080;
+  --color-danger: #e67e80;
+}
+
+/* Everforest Light */
+[data-theme="everforest-light"] {
+  --color-surface: #fdf6e3;
+  --color-surface-secondary: #f3ead3;
+  --color-background: #e8dfc0;
+  --color-text: #5c6a72;
+  --color-text-muted: #939f91;
+  --color-border: #d8d3ba;
+  --color-success: #8da101;
+  --color-danger: #f85552;
+}
+
+/* Kanagawa */
+[data-theme="kanagawa"] {
+  --color-surface: #1f1f28;
+  --color-surface-secondary: #16161d;
+  --color-background: #13131a;
+  --color-text: #dcd7ba;
+  --color-text-muted: #727169;
+  --color-border: #2a2a37;
+  --color-success: #76946a;
+  --color-danger: #c34043;
+}
+
+/* Rose Pine */
+[data-theme="rose-pine"] {
+  --color-surface: #191724;
+  --color-surface-secondary: #1f1d2e;
+  --color-background: #131220;
+  --color-text: #e0def4;
+  --color-text-muted: #6e6a86;
+  --color-border: #26233a;
+  --color-success: #9ccfd8;
+  --color-danger: #eb6f92;
+}
+
+/* Rose Pine Dawn */
+[data-theme="rose-pine-dawn"] {
+  --color-surface: #faf4ed;
+  --color-surface-secondary: #fffaf3;
+  --color-background: #f2e9de;
+  --color-text: #575279;
+  --color-text-muted: #9893a5;
+  --color-border: #dfdad9;
+  --color-success: #56949f;
+  --color-danger: #b4637a;
+}
+
 body {
   min-height: 100vh;
   background-color: var(--color-surface);

@@ -9,8 +9,8 @@ import {
   NUMBER_LOCALE_OPTIONS,
   DATE_FORMAT_OPTIONS,
   FIRST_DAY_OPTIONS,
-  THEME_OPTIONS,
 } from '../../../constants/preferences';
+import ThemeSelectorButton from '../../../components/ThemeSelectorButton';
 import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import BinderImportModal from '../../home/components/BinderImportModal';
 import SyncSection from './SyncSection';
@@ -76,20 +76,7 @@ export default function SettingsPage() {
         >
           <h2 className="text-lg font-semibold mb-1">Theme</h2>
           <p className="text-sm text-app-muted mb-3">Choose a color scheme</p>
-          <Select
-            label="Theme"
-            variant="flat"
-            selectedKeys={[theme]}
-            onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0];
-              if (val) setTheme(String(val) as typeof theme);
-            }}
-            className="max-w-xs"
-          >
-            {THEME_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </Select>
+          <ThemeSelectorButton theme={theme} onSelect={setTheme} size="md" />
         </section>
 
         {/* Display value format */}

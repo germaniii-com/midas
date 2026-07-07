@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Button, Input, Card, CardBody, Spinner, Select, SelectItem } from '@heroui/react';
+import { Button, Input, Card, CardBody, Spinner } from '@heroui/react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../hooks/useTheme';
 import { useServer } from '../../hooks/useServer';
-import { THEME_OPTIONS } from '../../constants/preferences';
+import ThemeSelectorButton from '../../components/ThemeSelectorButton';
 import { getErrorMessage } from '../../utils/toast';
 
 export default function ServerSelector() {
@@ -51,21 +51,7 @@ export default function ServerSelector() {
     <div className="mx-auto w-full max-w-md px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold sm:text-3xl">Midas</h1>
-        <Select
-          size="sm"
-          variant="flat"
-          aria-label="Theme"
-          selectedKeys={[theme]}
-          onSelectionChange={(keys) => {
-            const val = Array.from(keys)[0];
-            if (val) setTheme(String(val) as typeof theme);
-          }}
-          className="w-[140px]"
-        >
-          {THEME_OPTIONS.map((opt) => (
-            <SelectItem key={opt.value}>{opt.label}</SelectItem>
-          ))}
-        </Select>
+        <ThemeSelectorButton theme={theme} onSelect={setTheme} />
       </div>
 
       <div className="flex flex-col gap-4 animate-fade-in-up">
