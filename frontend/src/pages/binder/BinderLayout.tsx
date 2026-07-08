@@ -346,6 +346,19 @@ export default function BinderLayout() {
             <button
               onClick={() => {
                 setDrawerOpen(false);
+                setEditName(binder.name);
+                setEditCurrency(binder.currency);
+                setEditOpen(true);
+              }}
+              aria-label="Edit binder"
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium rounded-xl transition-colors text-app-muted hover:text-app-text hover:bg-app-surface"
+            >
+              <PencilIcon width={22} />
+              <span>Edit Binder</span>
+            </button>
+            <button
+              onClick={() => {
+                setDrawerOpen(false);
                 navigate('/');
               }}
               aria-label="Back to binders"
