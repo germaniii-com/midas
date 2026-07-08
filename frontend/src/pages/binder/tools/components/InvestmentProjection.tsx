@@ -13,11 +13,13 @@ import {
   ComposedChart,
 } from 'recharts';
 import { useBinderCurrency, formatCurrency } from '../../../../utils/format';
+import { useChartColors } from '../../../../hooks/useChartColors';
 import { usePreferences } from '../../../../hooks/usePreferences';
 
 export default function InvestmentProjection() {
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
+  const chartColors = useChartColors();
 
   const [initial, setInitial] = useState('10000');
   const [monthly, setMonthly] = useState('500');
@@ -147,22 +149,22 @@ export default function InvestmentProjection() {
               type="monotone"
               dataKey="contributions"
               stackId="1"
-              fill="#3b82f6"
-              stroke="#3b82f6"
+              fill={chartColors[0]}
+              stroke={chartColors[0]}
               name="Contributions"
             />
             <Area
               type="monotone"
               dataKey="growth"
               stackId="1"
-              fill="#22c55e"
-              stroke="#22c55e"
+              fill={chartColors[1]}
+              stroke={chartColors[1]}
               name="Growth"
             />
             <Line
               type="monotone"
               dataKey="balance"
-              stroke="#1e293b"
+              stroke={chartColors[2]}
               strokeWidth={2}
               dot={false}
               name="Total Balance"

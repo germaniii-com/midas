@@ -105,6 +105,7 @@ export interface ThemeColors {
   border: string;
   success: string;
   danger: string;
+  chart: string[];
 }
 
 export const THEME_COLORS: Record<Theme, ThemeColors> = {
@@ -117,6 +118,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#e4e4e7',
     success: '#16a34a',
     danger: '#dc2626',
+    chart: [
+      '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4',
+      '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#84cc16',
+      '#f43f5e', '#f59e0b', '#10b981', '#d946ef', '#6366f1',
+    ],
   },
   dark: {
     surface: '#09090b',
@@ -127,6 +133,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#27272a',
     success: '#22c55e',
     danger: '#ef4444',
+    chart: [
+      '#ef4444', '#fb923c', '#facc15', '#4ade80', '#22d3ee',
+      '#60a5fa', '#a78bfa', '#f472b6', '#2dd4bf', '#a3e635',
+      '#f87171', '#fbbf24', '#34d399', '#c084fc', '#818cf8',
+    ],
   },
   'catppuccin-latte': {
     surface: '#eff1f5',
@@ -137,6 +148,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#ccd0da',
     success: '#40a02b',
     danger: '#d20f39',
+    chart: [
+      '#d20f39', '#fe640b', '#df8e1d', '#40a02b', '#179299',
+      '#1e66f5', '#8839ef', '#ea76cb', '#04a5e5', '#209fb5',
+      '#e64553', '#dd7878', '#7287fd', '#babbf1', '#dc8a78',
+    ],
   },
   'catppuccin-frappe': {
     surface: '#303446',
@@ -147,6 +163,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#414559',
     success: '#a6d189',
     danger: '#e78284',
+    chart: [
+      '#e78284', '#ef9f76', '#e5c890', '#a6d189', '#81c8be',
+      '#8caaee', '#ca9ee6', '#f4b8e4', '#99d1db', '#85c1dc',
+      '#ea999c', '#eebebe', '#b5bfe7', '#c6d0f5', '#babbf1',
+    ],
   },
   'catppuccin-macchiato': {
     surface: '#24273a',
@@ -157,6 +178,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#363a4f',
     success: '#a6da95',
     danger: '#ed8796',
+    chart: [
+      '#ed8796', '#f5a97f', '#eed49f', '#a6da95', '#8bd5ca',
+      '#8aadf4', '#c6a0f6', '#f5bde6', '#91d7e3', '#7dc4e4',
+      '#ee99a0', '#f0c6c6', '#b7bdf8', '#cad3f5', '#c6a0f6',
+    ],
   },
   'catppuccin-mocha': {
     surface: '#1e1e2e',
@@ -167,6 +193,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#313244',
     success: '#a6e3a1',
     danger: '#f38ba8',
+    chart: [
+      '#f38ba8', '#fab387', '#f9e2af', '#a6e3a1', '#94e2d5',
+      '#89b4fa', '#cba6f7', '#f5c2e7', '#89dceb', '#74c7ec',
+      '#eba0ac', '#f2cdcd', '#b4befe', '#cdd6f4', '#a6e3a1',
+    ],
   },
   dracula: {
     surface: '#282a36',
@@ -177,6 +208,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#44475a',
     success: '#50fa7b',
     danger: '#ff5555',
+    chart: [
+      '#ff5555', '#ffb86c', '#f1fa8c', '#50fa7b', '#8be9fd',
+      '#6272a4', '#bd93f9', '#ff79c6', '#69ff94', '#ff9580',
+      '#ff6e6e', '#c4ff9d', '#d6acff', '#f8f8f2', '#6272a4',
+    ],
   },
   nord: {
     surface: '#2e3440',
@@ -187,6 +223,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#4c566a',
     success: '#a3be8c',
     danger: '#bf616a',
+    chart: [
+      '#bf616a', '#d08770', '#ebcb8b', '#a3be8c', '#88c0d0',
+      '#81a1c1', '#5e81ac', '#b48ead', '#8fbcbb', '#b0c9d6',
+      '#c16069', '#d18f6f', '#eacd8e', '#a5be8d', '#81a1c1',
+    ],
   },
   'solarized-light': {
     surface: '#fdf6e3',
@@ -197,6 +238,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#d5cfa4',
     success: '#859900',
     danger: '#dc322f',
+    chart: [
+      '#dc322f', '#cb4b16', '#b58900', '#859900', '#2aa198',
+      '#268bd2', '#6c71c4', '#d33682', '#16a085', '#657b83',
+      '#dc3545', '#d35400', '#c59800', '#86a000', '#268bd2',
+    ],
   },
   'solarized-dark': {
     surface: '#002b36',
@@ -207,6 +253,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#073642',
     success: '#859900',
     danger: '#dc322f',
+    chart: [
+      '#dc322f', '#cb4b16', '#b58900', '#859900', '#2aa198',
+      '#268bd2', '#6c71c4', '#d33682', '#16a085', '#839496',
+      '#dc3545', '#d35400', '#c59800', '#86a000', '#268bd2',
+    ],
   },
   'one-dark-pro': {
     surface: '#282c34',
@@ -217,6 +268,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#3e4452',
     success: '#98c379',
     danger: '#e06c75',
+    chart: [
+      '#e06c75', '#d19a66', '#e5c07b', '#98c379', '#56b6c2',
+      '#61afef', '#c678dd', '#c67899', '#abb2bf', '#98c379',
+      '#e06c75', '#d19a66', '#e5c07b', '#56b6c2', '#61afef',
+    ],
   },
   'github-light': {
     surface: '#ffffff',
@@ -227,6 +283,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#d0d7de',
     success: '#1a7f37',
     danger: '#cf222e',
+    chart: [
+      '#cf222e', '#fd8c73', '#bf8700', '#1a7f37', '#8250df',
+      '#0969da', '#6e40c9', '#cf222e', '#1a7f37', '#656d76',
+      '#fd8c73', '#bf8700', '#0969da', '#8250df', '#d1242f',
+    ],
   },
   'github-dark': {
     surface: '#0d1117',
@@ -237,6 +298,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#30363d',
     success: '#3fb950',
     danger: '#f85149',
+    chart: [
+      '#f85149', '#d29922', '#3fb950', '#58a6ff', '#bc8cff',
+      '#79c0ff', '#f0883e', '#db6d28', '#3fb950', '#8b949e',
+      '#f85149', '#d29922', '#58a6ff', '#bc8cff', '#79c0ff',
+    ],
   },
   'gruvbox-dark': {
     surface: '#282828',
@@ -247,6 +313,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#504945',
     success: '#b8bb26',
     danger: '#fb4934',
+    chart: [
+      '#fb4934', '#fe8019', '#fabd2f', '#b8bb26', '#8ec07c',
+      '#83a598', '#d3869b', '#b16286', '#689d6a', '#a89984',
+      '#fb4934', '#fe8019', '#fabd2f', '#b8bb26', '#83a598',
+    ],
   },
   'gruvbox-light': {
     surface: '#fbf1c7',
@@ -257,6 +328,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#d5c4a1',
     success: '#98971a',
     danger: '#cc241d',
+    chart: [
+      '#cc241d', '#d65d0e', '#d79921', '#98971a', '#689d6a',
+      '#458588', '#b16286', '#cc241d', '#98971a', '#7c6f64',
+      '#d65d0e', '#d79921', '#458588', '#b16286', '#689d6a',
+    ],
   },
   'tokyo-night': {
     surface: '#1a1b26',
@@ -267,6 +343,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#292e42',
     success: '#9ece6a',
     danger: '#f7768e',
+    chart: [
+      '#f7768e', '#ff9e64', '#e0af68', '#9ece6a', '#73daca',
+      '#7aa2f7', '#bb9af7', '#f7768e', '#9ece6a', '#565f89',
+      '#ff9e64', '#e0af68', '#7aa2f7', '#bb9af7', '#73daca',
+    ],
   },
   monokai: {
     surface: '#272822',
@@ -277,6 +358,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#3e3d32',
     success: '#a6e22e',
     danger: '#f92672',
+    chart: [
+      '#f92672', '#fd971f', '#e6db74', '#a6e22e', '#66d9ef',
+      '#ae81ff', '#f8f8f2', '#75715e', '#a6e22e', '#f92672',
+      '#fd971f', '#e6db74', '#66d9ef', '#ae81ff', '#f8f8f2',
+    ],
   },
   'ayu-dark': {
     surface: '#0b0e14',
@@ -287,6 +373,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#1c2128',
     success: '#7fd962',
     danger: '#f07178',
+    chart: [
+      '#f07178', '#ff8f40', '#e6b450', '#7fd962', '#95e6cb',
+      '#73b8ff', '#d4a0ff', '#f07178', '#7fd962', '#5c6773',
+      '#ff8f40', '#e6b450', '#73b8ff', '#d4a0ff', '#95e6cb',
+    ],
   },
   'ayu-light': {
     surface: '#fafafa',
@@ -297,6 +388,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#e0e0e0',
     success: '#6cbf43',
     danger: '#e65050',
+    chart: [
+      '#e65050', '#e68a2e', '#c9b62c', '#6cbf43', '#4db5a0',
+      '#4da0e6', '#a07dd4', '#e65050', '#6cbf43', '#8a9199',
+      '#e68a2e', '#c9b62c', '#4da0e6', '#a07dd4', '#4db5a0',
+    ],
   },
   'everforest-dark': {
     surface: '#2d353b',
@@ -307,6 +403,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#475258',
     success: '#a7c080',
     danger: '#e67e80',
+    chart: [
+      '#e67e80', '#e69875', '#dbbc7f', '#a7c080', '#83c092',
+      '#7fbbb3', '#d3c6aa', '#e67e80', '#a7c080', '#859289',
+      '#e69875', '#dbbc7f', '#83c092', '#7fbbb3', '#d3c6aa',
+    ],
   },
   'everforest-light': {
     surface: '#fdf6e3',
@@ -317,6 +418,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#d8d3ba',
     success: '#8da101',
     danger: '#f85552',
+    chart: [
+      '#f85552', '#f5a352', '#dac25a', '#8da101', '#83b6af',
+      '#5a9fd4', '#a07dd4', '#f85552', '#8da101', '#939f91',
+      '#f5a352', '#dac25a', '#83b6af', '#5a9fd4', '#a07dd4',
+    ],
   },
   kanagawa: {
     surface: '#1f1f28',
@@ -327,6 +433,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#2a2a37',
     success: '#76946a',
     danger: '#c34043',
+    chart: [
+      '#c34043', '#dca16a', '#c4a86b', '#76946a', '#6e9b8e',
+      '#7e9cd8', '#957fb8', '#c34043', '#76946a', '#727169',
+      '#dca16a', '#c4a86b', '#6e9b8e', '#7e9cd8', '#dcd7ba',
+    ],
   },
   'rose-pine': {
     surface: '#191724',
@@ -337,6 +448,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#26233a',
     success: '#9ccfd8',
     danger: '#eb6f92',
+    chart: [
+      '#eb6f92', '#f6c177', '#ebbcba', '#31748f', '#9ccfd8',
+      '#c4a7e7', '#e0def4', '#eb6f92', '#9ccfd8', '#6e6a86',
+      '#f6c177', '#ebbcba', '#31748f', '#c4a7e7', '#e0def4',
+    ],
   },
   'rose-pine-dawn': {
     surface: '#faf4ed',
@@ -347,6 +463,11 @@ export const THEME_COLORS: Record<Theme, ThemeColors> = {
     border: '#dfdad9',
     success: '#56949f',
     danger: '#b4637a',
+    chart: [
+      '#b4637a', '#ea9d34', '#d7827e', '#286983', '#56949f',
+      '#907aa9', '#e0def4', '#b4637a', '#56949f', '#9893a5',
+      '#ea9d34', '#d7827e', '#286983', '#907aa9', '#e0def4',
+    ],
   },
 };
 

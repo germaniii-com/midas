@@ -18,11 +18,13 @@ import { formatCurrency, useBinderCurrency } from '../../../../utils/format';
 import { usePreferences } from '../../../../hooks/usePreferences';
 import { getErrorMessage } from '../../../../utils/toast';
 import { ErrorMessage } from '../../../../components/ErrorMessage';
+import { useChartColors } from '../../../../hooks/useChartColors';
 
 export default function CashFlowChart() {
   const { id } = useParams<{ id: string }>();
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
+  const chartColors = useChartColors();
 
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -174,8 +176,8 @@ export default function CashFlowChart() {
               formatter={(value) => formatCurrency(Number(value) || 0, currency, numberLocale)}
             />
             <Legend />
-            <Bar dataKey="income" fill="#22c55e" name="Income" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expense" fill="#ef4444" name="Expense" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="income" fill={chartColors[1]} name="Income" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expense" fill={chartColors[0]} name="Expense" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}

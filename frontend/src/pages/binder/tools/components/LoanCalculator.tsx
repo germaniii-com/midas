@@ -10,11 +10,13 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useBinderCurrency, formatCurrency } from '../../../../utils/format';
+import { useChartColors } from '../../../../hooks/useChartColors';
 import { usePreferences } from '../../../../hooks/usePreferences';
 
 export default function LoanCalculator() {
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
+  const chartColors = useChartColors();
 
   const [amount, setAmount] = useState('300000');
   const [rate, setRate] = useState('6.5');
@@ -138,14 +140,14 @@ export default function LoanCalculator() {
                   formatCurrency(Number(value) || 0, currency, numberLocale)
                 }
               />
-              <Line
-                type="monotone"
-                dataKey="remaining"
-                stroke="#f97316"
-                strokeWidth={2}
-                dot={false}
-                name="Remaining Balance"
-              />
+            <Line
+              type="monotone"
+              dataKey="remaining"
+              stroke={chartColors[0]}
+              strokeWidth={2}
+              dot={false}
+              name="Remaining Balance"
+            />
             </LineChart>
           </ResponsiveContainer>
         </>

@@ -14,16 +14,12 @@ import { getTags, type Tag } from '../../../../api/tags';
 import { formatCurrency, useBinderCurrency } from '../../../../utils/format';
 import { getErrorMessage } from '../../../../utils/toast';
 import { ErrorMessage } from '../../../../components/ErrorMessage';
-
-const COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4',
-  '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#14b8a6',
-  '#84cc16', '#f43f5e', '#f59e0b', '#10b981', '#6366f1',
-];
+import { useChartColors } from '../../../../hooks/useChartColors';
 
 export default function SpendingBreakdownChart() {
   const { id } = useParams<{ id: string }>();
   const currency = useBinderCurrency();
+  const chartColors = useChartColors();
 
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -170,7 +166,7 @@ export default function SpendingBreakdownChart() {
               }
             >
               {data.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                <Cell key={i} fill={chartColors[i % chartColors.length]} />
               ))}
             </Pie>
             <Tooltip

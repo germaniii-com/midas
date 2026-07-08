@@ -6,10 +6,12 @@ import { getPayeeAnalysis, type PayeeRow } from '../../../../api/reports';
 import { formatCurrency, useBinderCurrency } from '../../../../utils/format';
 import { getErrorMessage } from '../../../../utils/toast';
 import { ErrorMessage } from '../../../../components/ErrorMessage';
+import { useChartColors } from '../../../../hooks/useChartColors';
 
 export default function PayeeAnalysisChart() {
   const { id } = useParams<{ id: string }>();
   const currency = useBinderCurrency();
+  const chartColors = useChartColors();
 
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -127,7 +129,7 @@ export default function PayeeAnalysisChart() {
                 return p.payload.label;
               }}
             />
-            <Bar dataKey="displayValue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="displayValue" fill={chartColors[0]} radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}

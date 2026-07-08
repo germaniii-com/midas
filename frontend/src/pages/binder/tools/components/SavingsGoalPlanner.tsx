@@ -12,11 +12,13 @@ import {
   Legend,
 } from 'recharts';
 import { useBinderCurrency, formatCurrency } from '../../../../utils/format';
+import { useChartColors } from '../../../../hooks/useChartColors';
 import { usePreferences } from '../../../../hooks/usePreferences';
 
 export default function SavingsGoalPlanner() {
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
+  const chartColors = useChartColors();
 
   const [target, setTarget] = useState('50000');
   const [current, setCurrent] = useState('5000');
@@ -178,14 +180,14 @@ export default function SavingsGoalPlanner() {
               <Legend />
               <ReferenceLine
                 y={parseFloat(target)}
-                stroke="#f97316"
+                stroke={chartColors[0]}
                 strokeDasharray="5 5"
                 label="Target"
               />
               <Line
                 type="monotone"
                 dataKey="balance"
-                stroke="#3b82f6"
+                stroke={chartColors[1]}
                 strokeWidth={2}
                 dot={false}
                 name="Savings"

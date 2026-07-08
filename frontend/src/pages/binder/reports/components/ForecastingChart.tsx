@@ -20,11 +20,13 @@ import { formatCurrency, useBinderCurrency } from '../../../../utils/format';
 import { usePreferences } from '../../../../hooks/usePreferences';
 import { getErrorMessage } from '../../../../utils/toast';
 import { ErrorMessage } from '../../../../components/ErrorMessage';
+import { useChartColors } from '../../../../hooks/useChartColors';
 
 export default function ForecastingChart() {
   const { id } = useParams<{ id: string }>();
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
+  const chartColors = useChartColors();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [baseAccountId, setBaseAccountId] = useState<string>('');
@@ -142,11 +144,11 @@ export default function ForecastingChart() {
                 formatter={(value) => formatCurrency(Number(value) || 0, currency, numberLocale)}
               />
               <Legend />
-              <Bar dataKey="scheduledOutflow" fill="#f97316" name="Scheduled Outflow" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="scheduledOutflow" fill={chartColors[0]} name="Scheduled Outflow" radius={[2, 2, 0, 0]} />
               <Line
                 type="monotone"
                 dataKey="projectedBalance"
-                stroke="#3b82f6"
+                stroke={chartColors[1]}
                 strokeWidth={2}
                 name="Projected Balance"
                 dot={false}

@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useBinderCurrency, formatCurrency } from '../../../../utils/format';
+import { useChartColors } from '../../../../hooks/useChartColors';
 import { usePreferences } from '../../../../hooks/usePreferences';
 
 const FREQUENCIES = [
@@ -21,6 +22,7 @@ const FREQUENCIES = [
 export default function InterestCalculator() {
   const currency = useBinderCurrency();
   const { numberLocale } = usePreferences();
+  const chartColors = useChartColors();
 
   const [principal, setPrincipal] = useState('10000');
   const [rate, setRate] = useState('5');
@@ -162,7 +164,7 @@ export default function InterestCalculator() {
             <Line
               type="monotone"
               dataKey="balance"
-              stroke="#3b82f6"
+              stroke={chartColors[0]}
               strokeWidth={2}
               dot={false}
               name="Balance"
