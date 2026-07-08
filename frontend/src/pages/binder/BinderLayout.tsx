@@ -173,36 +173,39 @@ export default function BinderLayout() {
         <div
           className={`flex items-center h-16 ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'}`}
         >
-          <Button
-            isIconOnly
-            variant="light"
-            onPress={() => navigate('/')}
-            aria-label="Back to binders"
-            className="min-w-0 h-auto p-1.5 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface"
-          >
-            <ArrowLeftOnRectangleIcon width={18} />
-          </Button>
           {!collapsed && (
-              <div className="min-w-0 flex-1 group">
-                <div className="flex items-center gap-1">
-                  <h2 className="text-sm font-semibold truncate">{binder.name}</h2>
-                  <Button
-                    isIconOnly
-                    variant="light"
-                    onPress={() => {
-                      setEditName(binder.name);
-                      setEditCurrency(binder.currency);
-                      setEditOpen(true);
-                    }}
-                    aria-label="Edit binder"
-                    className="min-w-0 h-auto p-1 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <PencilIcon width={14} />
-                  </Button>
-                </div>
+            <div className="min-w-0 flex-1 group">
+              <div className="flex items-center gap-1">
+                <h2 className="text-sm font-semibold truncate">{binder.name}</h2>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  onPress={() => {
+                    setEditName(binder.name);
+                    setEditCurrency(binder.currency);
+                    setEditOpen(true);
+                  }}
+                  aria-label="Edit binder"
+                  className="min-w-0 h-auto p-1 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <PencilIcon width={14} />
+                </Button>
+              </div>
               <p className="text-xs text-app-muted">{binder.currency}</p>
             </div>
           )}
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="min-w-0 h-auto p-1.5 text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface"
+          >
+            <ChevronLeftIcon
+              width={18}
+              className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+            />
+          </Button>
         </div>
         <nav className={`flex-1 flex flex-col gap-1 ${collapsed ? 'p-2 items-center' : 'p-3'}`}>
           <NavItems collapsed={collapsed} />
@@ -245,19 +248,16 @@ export default function BinderLayout() {
             </NavLink>
             <Button
               variant="light"
-              onPress={() => setCollapsed(!collapsed)}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              onPress={() => navigate('/')}
+              aria-label="Back to binders"
               className={`flex items-center rounded-lg text-app-muted data-[hover=true]:text-app-text data-[hover=true]:bg-app-surface active:scale-[0.97] transition-all duration-200 ${
                 collapsed
                   ? 'justify-center px-0 py-2.5 min-w-0 h-auto'
                   : 'justify-start gap-3 w-full px-3 py-2.5 text-sm font-medium h-auto'
               }`}
             >
-              <ChevronLeftIcon
-                width={22}
-                className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
-              />
-              {!collapsed && <span>Collapse</span>}
+              <ArrowLeftOnRectangleIcon width={22} />
+              {!collapsed && <span>Back to Binders</span>}
             </Button>
           </div>
         </div>
@@ -335,6 +335,25 @@ export default function BinderLayout() {
               <Cog6ToothIcon width={22} />
               <span>Settings</span>
             </NavLink>
+            <button
+              onClick={() => setShowMoney(!showMoney)}
+              aria-label={showMoney ? 'Hide balances' : 'Show balances'}
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium rounded-xl transition-colors text-app-muted hover:text-app-text hover:bg-app-surface"
+            >
+              {showMoney ? <EyeIcon width={22} /> : <EyeSlashIcon width={22} />}
+              <span>{showMoney ? 'Hide Balances' : 'Show Balances'}</span>
+            </button>
+            <button
+              onClick={() => {
+                setDrawerOpen(false);
+                navigate('/');
+              }}
+              aria-label="Back to binders"
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium rounded-xl transition-colors text-app-muted hover:text-app-text hover:bg-app-surface"
+            >
+              <ArrowLeftOnRectangleIcon width={22} />
+              <span>Back to Binders</span>
+            </button>
           </div>
         </div>
 
