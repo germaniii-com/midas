@@ -20,9 +20,9 @@ export const navItems: NavItem[] = [
   { label: 'Accounts', path: 'accounts', icon: WalletIcon },
   { label: 'Transactions', path: 'transactions', icon: ArrowsRightLeftIcon },
   { label: 'Payment Schedules', path: 'payment-schedules', icon: CalendarDaysIcon },
-  { label: 'Reports', path: 'reports', icon: ChartBarIcon },
   { label: 'Tags', path: 'tags', icon: TagIcon },
   { label: 'Categories', path: 'categories', icon: FolderIcon },
   { label: 'Payees', path: 'payees', icon: BuildingOfficeIcon },
+  { label: 'Reports', path: 'reports', icon: ChartBarIcon },
   { label: 'Tools', path: 'tools', icon: WrenchScrewdriverIcon },
 ];
