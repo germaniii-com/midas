@@ -117,6 +117,7 @@ export const paymentSchedules = sqliteTable('payment_schedules', {
   name: text('name').notNull(),
   accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
   payeeId: text('payee_id').references(() => payees.id, { onDelete: 'set null' }),
+  transferAccountId: text('transfer_account_id').references(() => accounts.id, { onDelete: 'set null' }),
   amount: text('amount').notNull(),
   repeatInterval: integer('repeat_interval').notNull().default(1),
   repeatType: text('repeat_type').notNull(),

@@ -30,9 +30,10 @@ export default function CreatePaymentSchedulePage() {
 
   const [name, setName] = useState('');
   const [isExpense, setIsExpense] = useState(true);
-  const [amount, setAmount] = useState('0');
+  const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState('');
   const [payeeId, setPayeeId] = useState('');
+  const [transferAccountId, setTransferAccountId] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [repeatInterval, setRepeatInterval] = useState('1');
   const [repeatType, setRepeatType] = useState('month');
@@ -126,6 +127,7 @@ export default function CreatePaymentSchedulePage() {
         name: name.trim(),
         accountId,
         payeeId: payeeId || null,
+        transferAccountId: transferAccountId || null,
         amount: String(isExpense ? -amt : amt),
         repeatInterval: parseInt(repeatInterval) || 1,
         repeatType: repeatType as 'day' | 'week' | 'month' | 'year',
@@ -148,6 +150,13 @@ export default function CreatePaymentSchedulePage() {
       setSubmitting(false);
     }
   }
+
+  const payeeOptions = [
+    ...payees.map((p) => ({ key: `payee:${p.id}`, name: p.name, type: 'payee' as const })),
+    ...accounts
+      .filter((a) => a.id !== accountId)
+      .map((a) => ({ key: `account:${a.id}`, name: a.name, type: 'account' as const })),
+  ];
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -217,19 +226,64 @@ export default function CreatePaymentSchedulePage() {
           isRequired
         />
 
+        <Select
+          label="Account"
+          placeholder="Select an account"
+          selectedKeys={accountId ? [accountId] : []}
+          onSelectionChange={(keys) => {
+            const val = Array.from(keys)[0];
+            if (val) setAccountId(String(val));
+          }}
+          isRequired
+          isInvalid={!!error && !accountId}
+        >
+          {accounts.map((a) => (
+            <SelectItem key={a.id}>{a.name}</SelectItem>
+          ))}
+        </Select>
+
         <div className="flex items-end gap-2">
           <Select
-            label="Payee"
-            placeholder="Select payee"
-            selectedKeys={payeeId ? [payeeId] : []}
+            label="Payee / Transfer"
+            placeholder="Select payee or account"
+            selectedKeys={
+              transferAccountId
+                ? [`account:${transferAccountId}`]
+                : payeeId
+                  ? [`payee:${payeeId}`]
+                  : []
+            }
             onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0];
-              setPayeeId(val ? String(val) : '');
+              const val = Array.from(keys)[0] as string | undefined;
+              if (!val) {
+                setPayeeId('');
+                setTransferAccountId('');
+                return;
+              }
+              const [type, id] = val.split(':');
+              if (type === 'account') {
+                setTransferAccountId(id);
+                setPayeeId('');
+              } else {
+                setPayeeId(id);
+                setTransferAccountId('');
+              }
             }}
             className="flex-1"
           >
-            {payees.map((p) => (
-              <SelectItem key={p.id}>{p.name}</SelectItem>
+            {payeeOptions.map((item) => (
+              <SelectItem key={item.key} textValue={item.name}>
+                {item.type === 'account' ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-app-muted font-medium uppercase tracking-wider">
+                      Account -
+                    </span>
+                    <span>{item.name}</span>
+                  </div>
+                ) : (
+                  item.name
+                )}
+              </SelectItem>
             ))}
           </Select>
           <Button
@@ -284,22 +338,6 @@ export default function CreatePaymentSchedulePage() {
             onValueChange={setEndOccurrences}
           />
         )}
-
-        <Select
-          label="Account"
-          placeholder="Select an account"
-          selectedKeys={accountId ? [accountId] : []}
-          onSelectionChange={(keys) => {
-            const val = Array.from(keys)[0];
-            if (val) setAccountId(String(val));
-          }}
-          isRequired
-          isInvalid={!!error && !accountId}
-        >
-          {accounts.map((a) => (
-            <SelectItem key={a.id}>{a.name}</SelectItem>
-          ))}
-        </Select>
 
         <div className="flex gap-2 items-end">
           <Input

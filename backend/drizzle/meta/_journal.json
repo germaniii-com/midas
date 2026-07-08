@@ -15,6 +15,13 @@
       "when": 1782784381171,
       "tag": "0001_sync_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783504800000,
+      "tag": "0002_add_transfer_account_to_payment_schedules",
+      "breakpoints": true
     }
   ]
 }

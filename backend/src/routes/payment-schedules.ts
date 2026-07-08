@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { eq, and, sql, inArray, desc, asc } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '../db';
 import {
   paymentSchedules,
@@ -10,10 +11,15 @@ import {
 } from '../db/schema';
 import { computeNextOccurrences, type ScheduleRule } from '../recurrence';
 
+function flipAmount(amount: string): string {
+  return amount.startsWith('-') ? amount.slice(1) : `-${amount}`;
+}
+
 interface CreateScheduleBody {
   name: string;
   accountId: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   amount: string;
   repeatInterval: number;
   repeatType: 'day' | 'week' | 'month' | 'year';
@@ -32,6 +38,7 @@ interface UpdateScheduleBody {
   name?: string;
   accountId?: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   amount?: string;
   repeatInterval?: number;
   repeatType?: 'day' | 'week' | 'month' | 'year';
@@ -127,6 +134,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         filters.push(eq(paymentSchedules.isActive, true));
       }
 
+      const transferAccount = alias(accounts, 'transfer_account');
+
       const rows = await db
         .select({
           id: paymentSchedules.id,
@@ -136,6 +145,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           accountName: accounts.name,
           payeeId: paymentSchedules.payeeId,
           payeeName: payees.name,
+          transferAccountId: paymentSchedules.transferAccountId,
+          transferAccountName: transferAccount.name,
           amount: paymentSchedules.amount,
           repeatInterval: paymentSchedules.repeatInterval,
           repeatType: paymentSchedules.repeatType,
@@ -153,6 +164,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         .from(paymentSchedules)
         .leftJoin(accounts, eq(paymentSchedules.accountId, accounts.id))
         .leftJoin(payees, eq(paymentSchedules.payeeId, payees.id))
+        .leftJoin(transferAccount, eq(paymentSchedules.transferAccountId, transferAccount.id))
         .where(and(...filters))
         .orderBy(desc(paymentSchedules.isActive), asc(paymentSchedules.name))
         .limit(limit)
@@ -166,6 +178,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
     '/binders/:id/payment-schedules/:scheduleId',
     async (req, reply) => {
       const { id, scheduleId } = req.params;
+      const transferAccount = alias(accounts, 'transfer_account');
+
       const [row] = await db
         .select({
           id: paymentSchedules.id,
@@ -175,6 +189,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           accountName: accounts.name,
           payeeId: paymentSchedules.payeeId,
           payeeName: payees.name,
+          transferAccountId: paymentSchedules.transferAccountId,
+          transferAccountName: transferAccount.name,
           amount: paymentSchedules.amount,
           repeatInterval: paymentSchedules.repeatInterval,
           repeatType: paymentSchedules.repeatType,
@@ -192,6 +208,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         .from(paymentSchedules)
         .leftJoin(accounts, eq(paymentSchedules.accountId, accounts.id))
         .leftJoin(payees, eq(paymentSchedules.payeeId, payees.id))
+        .leftJoin(transferAccount, eq(paymentSchedules.transferAccountId, transferAccount.id))
         .where(and(eq(paymentSchedules.id, scheduleId), eq(paymentSchedules.binderId, id)));
 
       if (!row) {
@@ -210,6 +227,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         name,
         accountId,
         payeeId,
+        transferAccountId,
         amount,
         repeatInterval,
         repeatType,
@@ -247,6 +265,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           name: name.trim(),
           accountId,
           payeeId: payeeId ?? null,
+          transferAccountId: transferAccountId ?? null,
           amount,
           repeatInterval: repeatInterval ?? 1,
           repeatType,
@@ -275,6 +294,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
       if (req.body.name !== undefined) updates.name = req.body.name.trim();
       if (req.body.accountId !== undefined) updates.accountId = req.body.accountId;
       if (req.body.payeeId !== undefined) updates.payeeId = req.body.payeeId || null;
+      if (req.body.transferAccountId !== undefined) updates.transferAccountId = req.body.transferAccountId || null;
       if (req.body.amount !== undefined) updates.amount = req.body.amount;
       if (req.body.repeatInterval !== undefined) updates.repeatInterval = req.body.repeatInterval;
       if (req.body.repeatType !== undefined) updates.repeatType = req.body.repeatType;
@@ -336,6 +356,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           name: paymentSchedules.name,
           accountId: paymentSchedules.accountId,
           payeeId: paymentSchedules.payeeId,
+          transferAccountId: paymentSchedules.transferAccountId,
           amount: paymentSchedules.amount,
           repeatInterval: paymentSchedules.repeatInterval,
           repeatType: paymentSchedules.repeatType,
@@ -394,10 +415,34 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           amount: signedAmount,
           date: today,
           payeeId: schedule.payeeId,
+          transferId: null,
           notes: `Scheduled: ${schedule.name} | ${dueDate}`,
           isCleared: true,
         })
         .returning();
+
+      if (schedule.transferAccountId) {
+        const counterpartAmount = flipAmount(signedAmount);
+        const [counterpart] = await db
+          .insert(transactions)
+          .values({
+            binderId: id,
+            accountId: schedule.transferAccountId,
+            amount: counterpartAmount,
+            date: today,
+            payeeId: null,
+            transferId: tx.id,
+            isCleared: true,
+          })
+          .returning();
+
+        await db
+          .update(transactions)
+          .set({ transferId: counterpart.id })
+          .where(eq(transactions.id, tx.id));
+
+        tx.transferId = counterpart.id;
+      }
 
       const [occurrence] = await db
         .insert(paymentScheduleOccurrences)
@@ -419,6 +464,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { id } = req.params;
 
+      const transferAccount = alias(accounts, 'transfer_account');
+
       const schedules = await db
         .select({
           id: paymentSchedules.id,
@@ -428,6 +475,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           accountName: accounts.name,
           payeeId: paymentSchedules.payeeId,
           payeeName: payees.name,
+          transferAccountId: paymentSchedules.transferAccountId,
+          transferAccountName: transferAccount.name,
           amount: paymentSchedules.amount,
           repeatInterval: paymentSchedules.repeatInterval,
           repeatType: paymentSchedules.repeatType,
@@ -445,6 +494,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
         .from(paymentSchedules)
         .leftJoin(accounts, eq(paymentSchedules.accountId, accounts.id))
         .leftJoin(payees, eq(paymentSchedules.payeeId, payees.id))
+        .leftJoin(transferAccount, eq(paymentSchedules.transferAccountId, transferAccount.id))
         .where(and(eq(paymentSchedules.binderId, id), eq(paymentSchedules.isActive, true)));
 
       if (schedules.length === 0) return reply.send([]);
@@ -496,6 +546,8 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
           accountName: schedule.accountName,
           payeeId: schedule.payeeId,
           payeeName: schedule.payeeName,
+          transferAccountId: schedule.transferAccountId,
+          transferAccountName: schedule.transferAccountName,
           amount: schedule.amount,
         };
 

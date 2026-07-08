@@ -8,6 +8,8 @@ export interface PaymentSchedule {
   accountName: string;
   payeeId: string | null;
   payeeName: string | null;
+  transferAccountId: string | null;
+  transferAccountName: string | null;
   amount: string;
   repeatInterval: number;
   repeatType: 'day' | 'week' | 'month' | 'year';
@@ -38,6 +40,8 @@ export interface UpcomingSchedule {
     accountName: string;
     payeeId: string | null;
     payeeName: string | null;
+    transferAccountId: string | null;
+    transferAccountName: string | null;
     amount: string;
   };
   occurrence: UpcomingScheduleOccurrence;
@@ -63,6 +67,7 @@ export interface CreatePaymentScheduleData {
   name: string;
   accountId: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   amount: string;
   repeatInterval: number;
   repeatType: 'day' | 'week' | 'month' | 'year';
@@ -81,6 +86,7 @@ export interface UpdatePaymentScheduleData {
   name?: string;
   accountId?: string;
   payeeId?: string | null;
+  transferAccountId?: string | null;
   amount?: string;
   repeatInterval?: number;
   repeatType?: 'day' | 'week' | 'month' | 'year';
