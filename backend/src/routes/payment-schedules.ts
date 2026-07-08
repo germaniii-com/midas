@@ -53,10 +53,6 @@ interface UpdateScheduleBody {
   isActive?: boolean;
 }
 
-interface PayScheduleBody {
-  isExpense?: boolean;
-}
-
 function computeScheduleStatus(dueDate: string): 'overdue' | 'due_soon' | 'upcoming' | 'missed' {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -344,11 +340,10 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
     },
   );
 
-  app.post<{ Params: { id: string; scheduleId: string }; Body: PayScheduleBody }>(
+  app.post<{ Params: { id: string; scheduleId: string } }>(
     '/binders/:id/payment-schedules/:scheduleId/pay',
     async (req, reply) => {
       const { id, scheduleId } = req.params;
-      const { isExpense = true } = req.body;
 
       const [schedule] = await db
         .select({
@@ -404,8 +399,7 @@ export async function paymentScheduleRoutes(app: FastifyInstance) {
 
       const dueDate = nextOccurrences[0].dueDate;
       const today = new Date().toISOString().slice(0, 10);
-      const amt = parseFloat(schedule.amount);
-      const signedAmount = isExpense ? String(-Math.abs(amt)) : String(Math.abs(amt));
+      const signedAmount = schedule.amount;
 
       const [tx] = await db
         .insert(transactions)

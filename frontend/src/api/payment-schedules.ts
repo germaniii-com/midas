@@ -224,15 +224,10 @@ export async function deletePaymentSchedule(
 export async function paySchedule(
   binderId: string,
   scheduleId: string,
-  isExpense?: boolean,
 ): Promise<PayResult> {
   const res = await apiFetch(
     `${getApiUrl()}/api/binders/${binderId}/payment-schedules/${scheduleId}/pay`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isExpense: isExpense ?? true }),
-    },
+    { method: 'POST' },
   );
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Failed to pay schedule' }));
