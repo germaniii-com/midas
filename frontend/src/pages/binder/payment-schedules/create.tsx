@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+  Autocomplete,
+  AutocompleteItem,
   Button,
   Input,
   Select,
@@ -226,41 +228,39 @@ export default function CreatePaymentSchedulePage() {
           isRequired
         />
 
-        <Select
+        <Autocomplete
           label="Account"
           placeholder="Select an account"
-          selectedKeys={accountId ? [accountId] : []}
-          onSelectionChange={(keys) => {
-            const val = Array.from(keys)[0];
-            if (val) setAccountId(String(val));
+          selectedKey={accountId || null}
+          onSelectionChange={(key) => {
+            if (key !== null) setAccountId(String(key));
           }}
           isRequired
           isInvalid={!!error && !accountId}
         >
           {accounts.map((a) => (
-            <SelectItem key={a.id}>{a.name}</SelectItem>
+            <AutocompleteItem key={a.id}>{a.name}</AutocompleteItem>
           ))}
-        </Select>
+        </Autocomplete>
 
         <div className="flex items-end gap-2">
-          <Select
+          <Autocomplete
             label="Payee / Transfer"
             placeholder="Select payee or account"
-            selectedKeys={
+            selectedKey={
               transferAccountId
-                ? [`account:${transferAccountId}`]
+                ? `account:${transferAccountId}`
                 : payeeId
-                  ? [`payee:${payeeId}`]
-                  : []
+                  ? `payee:${payeeId}`
+                  : null
             }
-            onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0] as string | undefined;
-              if (!val) {
+            onSelectionChange={(key) => {
+              if (key === null) {
                 setPayeeId('');
                 setTransferAccountId('');
                 return;
               }
-              const [type, id] = val.split(':');
+              const [type, id] = String(key).split(':');
               if (type === 'account') {
                 setTransferAccountId(id);
                 setPayeeId('');
@@ -272,7 +272,7 @@ export default function CreatePaymentSchedulePage() {
             className="flex-1"
           >
             {payeeOptions.map((item) => (
-              <SelectItem key={item.key} textValue={item.name}>
+              <AutocompleteItem key={item.key} textValue={item.name}>
                 {item.type === 'account' ? (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-app-muted font-medium uppercase tracking-wider">
@@ -283,9 +283,9 @@ export default function CreatePaymentSchedulePage() {
                 ) : (
                   item.name
                 )}
-              </SelectItem>
+              </AutocompleteItem>
             ))}
-          </Select>
+          </Autocomplete>
           <Button
             isIconOnly
             variant="flat"
