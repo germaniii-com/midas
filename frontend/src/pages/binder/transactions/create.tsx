@@ -215,7 +215,15 @@ export default function CreateTransactionPage() {
             value={amount}
             onFocus={() => setAmount('')}
             onValueChange={(v) => {
-              setAmount(v);
+              const raw = v.replace(/[^0-9]/g, '');
+              if (raw.length === 0) {
+                setAmount('');
+              } else {
+                const padded = raw.padStart(3, '0');
+                const dollars = padded.slice(0, -2);
+                const cents = padded.slice(-2);
+                setAmount(`${parseInt(dollars)}.${cents}`);
+              }
               setError('');
             }}
             className="w-36 sm:w-64"

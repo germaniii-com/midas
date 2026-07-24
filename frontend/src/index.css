@@ -473,3 +473,15 @@ body {
 @utility safe-right {
   padding-right: env(safe-area-inset-right);
 }
+
+/* Prevent iOS Safari auto-zoom on form inputs (font-size must be ≥ 16px) */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  [data-slot="input"],
+  [data-slot="value"],
+  [data-slot="trigger"] {
+    font-size: 16px !important;
+  }
+}

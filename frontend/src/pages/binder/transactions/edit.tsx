@@ -76,7 +76,7 @@ export default function EditTransactionPage() {
       .then(([tx, a, p, t, atts]) => {
         const amt = parseFloat(tx.amount);
         setIsExpense(amt < 0);
-        setAmount(String(Math.abs(amt)));
+        setAmount(Math.abs(amt).toFixed(2));
         setAccountId(tx.accountId);
         setDate(tx.date);
         setPayeeId(tx.payeeId || '');
@@ -269,7 +269,15 @@ export default function EditTransactionPage() {
             placeholder="0.00"
             value={amount}
             onValueChange={(v) => {
-              setAmount(v);
+              const raw = v.replace(/[^0-9]/g, '');
+              if (raw.length === 0) {
+                setAmount('');
+              } else {
+                const padded = raw.padStart(3, '0');
+                const dollars = padded.slice(0, -2);
+                const cents = padded.slice(-2);
+                setAmount(`${parseInt(dollars)}.${cents}`);
+              }
               setError('');
             }}
             className="w-36 sm:w-64"
