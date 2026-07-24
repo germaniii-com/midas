@@ -53,6 +53,23 @@ export interface ForecastParams {
   includeDrafts?: boolean;
 }
 
+export interface AccountTrendPoint {
+  date: string;
+  balance: number;
+}
+
+export interface AccountTrendSeries {
+  accountId: string;
+  accountName: string;
+  series: AccountTrendPoint[];
+}
+
+export interface AccountTrendsParams {
+  startDate?: string;
+  endDate?: string;
+  interval?: 'daily' | 'weekly' | 'monthly';
+}
+
 function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -105,5 +122,16 @@ export async function getForecast(
     `${getApiUrl()}/api/binders/${binderId}/reports/forecast${buildQuery(params as unknown as Record<string, string | number | boolean | undefined>)}`,
   );
   if (!res.ok) throw new Error('Failed to fetch forecast');
+  return res.json();
+}
+
+export async function getAccountTrends(
+  binderId: string,
+  params?: AccountTrendsParams,
+): Promise<AccountTrendSeries[]> {
+  const res = await apiFetch(
+    `${getApiUrl()}/api/binders/${binderId}/reports/account-trends${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+  );
+  if (!res.ok) throw new Error('Failed to fetch account trends');
   return res.json();
 }

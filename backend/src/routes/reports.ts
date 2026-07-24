@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and, sql, inArray, gte, lte, notInArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, gte, lte, notInArray, isNull } from 'drizzle-orm';
 import { addDays, format, parseISO, isBefore } from 'date-fns';
 import { db } from '../db';
 import {
@@ -121,6 +121,7 @@ export async function reportRoutes(app: FastifyInstance) {
       eq(transactions.binderId, id),
       gte(transactions.date, startDate),
       lte(transactions.date, endDate),
+      isNull(transactions.transferId),
       transactionType === 'expense'
         ? sql`${sql.raw(amountReal('amount'))} < 0`
         : sql`${sql.raw(amountReal('amount'))} > 0`,
@@ -231,6 +232,129 @@ export async function reportRoutes(app: FastifyInstance) {
         transactionCount: Number(r.transactionCount),
       })),
     );
+  });
+
+  app.get<{
+    Params: { id: string };
+    Querystring: {
+      startDate?: string;
+      endDate?: string;
+      interval?: 'daily' | 'weekly' | 'monthly';
+    };
+  }>('/binders/:id/reports/account-trends', async (req, reply) => {
+    const { id } = req.params;
+    const {
+      startDate = format(addDays(new Date(), -90), 'yyyy-MM-dd'),
+      endDate = format(new Date(), 'yyyy-MM-dd'),
+      interval = 'monthly',
+    } = req.query;
+
+    const truncExpr = truncMap[interval];
+
+    interface BucketRow {
+      accountId: string;
+      accountName: string;
+      date: string;
+      balance: string;
+    }
+
+    const rows = await db.all<BucketRow>(
+      sql`
+        WITH prior AS (
+          SELECT
+            t.account_id AS accountId,
+            COALESCE(SUM(${sql.raw(amountReal('t.amount'))}), 0) AS opening
+          FROM transactions t
+          WHERE t.binder_id = ${id}
+            AND t.date < ${startDate}
+          GROUP BY t.account_id
+        ),
+        bucketed AS (
+          SELECT
+            t.account_id AS accountId,
+            ${sql.raw(truncExpr)} AS period,
+            COALESCE(SUM(${sql.raw(amountReal('t.amount'))}), 0) AS delta
+          FROM transactions t
+          WHERE t.binder_id = ${id}
+            AND t.date >= ${startDate}
+            AND t.date <= ${endDate}
+          GROUP BY t.account_id, ${sql.raw(truncExpr)}
+        )
+        SELECT
+          b.accountId,
+          a.name AS accountName,
+          b.period AS date,
+          COALESCE(p.opening, 0) + SUM(b.delta) OVER (PARTITION BY b.accountId ORDER BY b.period) AS balance
+        FROM bucketed b
+        LEFT JOIN prior p ON p.accountId = b.accountId
+        INNER JOIN accounts a ON a.id = b.accountId
+        ORDER BY b.accountId, b.period
+      `,
+    );
+
+    const map = new Map<string, { accountId: string; accountName: string; series: { date: string; balance: number }[] }>();
+    for (const row of rows) {
+      let entry = map.get(row.accountId);
+      if (!entry) {
+        entry = { accountId: row.accountId, accountName: row.accountName, series: [] };
+        map.set(row.accountId, entry);
+      }
+      entry.series.push({
+        date: row.date.slice(0, 10),
+        balance: parseFloat(row.balance),
+      });
+    }
+
+    const priorOnlyRows = await db.all<BucketRow>(
+      sql`
+        SELECT
+          p.account_id AS accountId,
+          a.name AS accountName,
+          ${startDate} AS date,
+          COALESCE(SUM(${sql.raw(amountReal('p.amount'))}), 0) AS balance
+        FROM transactions p
+        INNER JOIN accounts a ON a.id = p.account_id AND a.binder_id = ${id}
+        WHERE p.binder_id = ${id}
+          AND p.date < ${startDate}
+          AND p.account_id NOT IN (
+            SELECT DISTINCT t.account_id
+            FROM transactions t
+            WHERE t.binder_id = ${id}
+              AND t.date >= ${startDate}
+              AND t.date <= ${endDate}
+          )
+        GROUP BY p.account_id
+      `,
+    );
+
+    const allPeriods = generatePeriods(startDate, endDate, interval);
+
+    for (const row of priorOnlyRows) {
+      if (!map.has(row.accountId)) {
+        map.set(row.accountId, {
+          accountId: row.accountId,
+          accountName: row.accountName,
+          series: [{ date: allPeriods[0], balance: parseFloat(row.balance) }],
+        });
+      }
+    }
+
+    for (const entry of map.values()) {
+      const dataMap = new Map(entry.series.map((p) => [p.date, p.balance]));
+      const firstDataDate = entry.series[0]?.date;
+      const firstIdx = firstDataDate ? allPeriods.indexOf(firstDataDate) : -1;
+      if (firstIdx === -1) continue;
+
+      let lastBalance = entry.series[0].balance;
+      entry.series = allPeriods.slice(firstIdx).map((period) => {
+        if (dataMap.has(period)) {
+          lastBalance = dataMap.get(period)!;
+        }
+        return { date: period, balance: lastBalance };
+      });
+    }
+
+    return reply.send(Array.from(map.values()));
   });
 
   app.get<{
@@ -366,4 +490,31 @@ export async function reportRoutes(app: FastifyInstance) {
 
     return reply.send(result);
   });
+}
+
+function generatePeriods(startDate: string, endDate: string, interval: string): string[] {
+  const periods: string[] = [];
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  const current = new Date(start);
+
+  if (interval === 'monthly') {
+    current.setDate(1);
+  } else if (interval === 'weekly') {
+    const day = current.getDay();
+    current.setDate(current.getDate() - ((day + 6) % 7));
+  }
+
+  while (current <= end) {
+    periods.push(format(current, 'yyyy-MM-dd'));
+    if (interval === 'daily') {
+      current.setDate(current.getDate() + 1);
+    } else if (interval === 'weekly') {
+      current.setDate(current.getDate() + 7);
+    } else {
+      current.setMonth(current.getMonth() + 1);
+    }
+  }
+
+  return periods;
 }

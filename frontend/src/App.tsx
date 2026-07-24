@@ -15,6 +15,7 @@ import PaymentSchedulesPage from "./pages/binder/payment-schedules";
 import CreatePaymentSchedulePage from "./pages/binder/payment-schedules/create";
 import EditPaymentSchedulePage from "./pages/binder/payment-schedules/edit";
 import ReportsPage from "./pages/binder/reports";
+import AccountTrendsPage from "./pages/binder/reports/account-trends";
 import TagsPage from "./pages/binder/tags";
 import CreateTagPage from "./pages/binder/tags/create";
 import EditTagPage from "./pages/binder/tags/edit";
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="payment-schedules/create" element={<CreatePaymentSchedulePage />} />
           <Route path="payment-schedules/:scheduleId" element={<EditPaymentSchedulePage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="reports/account-trends" element={<AccountTrendsPage />} />
           <Route path="tags" element={<TagsPage />} />
           <Route path="tags/create" element={<CreateTagPage />} />
           <Route path="tags/:tagId" element={<EditTagPage />} />

@@ -3,6 +3,7 @@ import CashFlowChart from './components/CashFlowChart';
 import SpendingBreakdownChart from './components/SpendingBreakdownChart';
 import PayeeAnalysisChart from './components/PayeeAnalysisChart';
 import ForecastingChart from './components/ForecastingChart';
+import TopAccounts from './components/TopAccounts';
 
 export default function ReportsPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,7 +12,11 @@ export default function ReportsPage() {
     <div>
       <h1 className="text-2xl font-bold mb-4">Reports</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <h2 className="text-lg font-semibold mb-3">Account Trends</h2>
+
+      <TopAccounts />
+
+      <div className="flex flex-col gap-6">
         <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--color-surface-secondary)' }}>
           <h2 className="text-lg font-semibold mb-1">Cash Flow Trends</h2>
           <p className="text-xs text-app-muted mb-3">Income vs. expenses over time</p>
