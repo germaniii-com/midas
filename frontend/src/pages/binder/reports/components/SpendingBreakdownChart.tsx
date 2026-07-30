@@ -23,7 +23,7 @@ export default function SpendingBreakdownChart() {
 
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
-    d.setMonth(d.getMonth() - 3);
+    d.setMonth(d.getMonth() - 1);
     return d.toISOString().split('T')[0];
   });
   const [endDate, setEndDate] = useState('');

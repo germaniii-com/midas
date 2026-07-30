@@ -56,6 +56,7 @@ export async function reportRoutes(app: FastifyInstance) {
       eq(transactions.binderId, id),
       gte(transactions.date, startDate),
       lte(transactions.date, endDate),
+      isNull(transactions.transferId),
     ];
     if (accountIdList.length > 0) {
       conditions.push(inArray(transactions.accountId, accountIdList));
@@ -215,6 +216,7 @@ export async function reportRoutes(app: FastifyInstance) {
           eq(transactions.binderId, id),
           gte(transactions.date, startDate),
           lte(transactions.date, endDate),
+          isNull(transactions.transferId),
         ),
       )
       .groupBy(payees.name)
