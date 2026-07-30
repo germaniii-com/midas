@@ -29,6 +29,7 @@
     "directories": {
       "output": "release"
     },
+    "icon": "../midas-icon.png",
     "files": [
       "out/**/*"
     ],
