@@ -501,11 +501,13 @@ The schema is defined in `@midas/core/src/db/schema.ts` and includes:
 - `backend/src/db`, `backend/src/storage`, `backend/src/recurrence.ts`, and `backend/src/services/sync-engine.ts` were deleted (moved to core).
 - `drizzle.config.ts` points at `core/src/db/schema.ts`; `scripts/seed.ts` imports schema from `@midas/core/schema`.
 - Root scripts build core before backend (packaging/release pipelines included).
+- Dev mode: `backend/tsconfig.dev.json` maps `@midas/core` → `../core/src/index.ts` so tsx loads core **source directly** — no core build needed for `npm run dev`, `npm run dev:desktop` (spawns tsx with the dev tsconfig), or the db scripts. Production build (`tsc`) still resolves `@midas/core` from the built `dist/` via the workspace symlink.
+- Desktop packaging: `desktop/scripts/copy-backend-deps.js` detects workspace packages (symlinks in `node_modules`) and copies only their `dist/` + `package.json` instead of the whole source tree.
 
 ### Not done (future work)
 - `@midas/react` (frontend) still talks to the API over HTTP; it does not import `@midas/core` yet.
-- `@midas/desktop` still bundles the built backend + its deps; it does not call `@midas/core` directly yet. The desktop `copy-backend-deps.js` copies `@midas/core` from the workspace (including `dist`), which works but copies the source tree too.
-- Backend build: `npm run build --workspace=backend` requires `@midas/core` to be built first (`npm run build:core`). Dev: `npm run dev` runs `tsc --watch` for core so changes rebuild automatically (tsx may need a restart to pick up core changes).
+- `@midas/desktop` still bundles the built backend + its deps; it does not call `@midas/core` directly yet (though the packaged copy of core is now trimmed to `dist/` + `package.json`).
+- Production backend build (`npm run build --workspace=backend`) requires `@midas/core` to be built first (`npm run build:core`).
 
 ---
 

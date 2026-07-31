@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@midas/core": ["../core/src/index.ts"],
+      "@midas/core/schema": ["../core/src/db/schema.ts"]
+    }
+  }
+}

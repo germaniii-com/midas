@@ -71,7 +71,7 @@ async function startBackend(): Promise<number> {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } else {
-    backendProcess = spawn('npx', ['tsx', 'src/index.ts'], {
+    backendProcess = spawn('npx', ['tsx', '--tsconfig', 'tsconfig.dev.json', 'src/index.ts'], {
       cwd: backendDir,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
