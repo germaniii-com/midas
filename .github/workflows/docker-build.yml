@@ -58,9 +58,21 @@ jobs:
             TAGS="$TAGS -t $IMAGE:${GITHUB_REF#refs/tags/v}"
           fi
 
+          # The backend Dockerfile is a monorepo build (references core/), so it
+          # must be built from the repository root. The frontend is standalone.
+          if [[ "${{ matrix.target }}" == "backend" ]]; then
+            CONTEXT="."
+            DOCKERFILE="backend/Dockerfile"
+          else
+            CONTEXT="./frontend"
+            DOCKERFILE="frontend/Dockerfile"
+          fi
+
           docker buildx build \
             $TAGS \
             --target prod \
             --cache-from=type=registry,ref=$IMAGE:cache \
             --cache-to=type=registry,ref=$IMAGE:cache,mode=max \
-            --push ./${{ matrix.target }}
+            --push \
+            -f "$DOCKERFILE" \
+            "$CONTEXT"
