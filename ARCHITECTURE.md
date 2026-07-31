@@ -503,11 +503,16 @@ The schema is defined in `@midas/core/src/db/schema.ts` and includes:
 - Root scripts build core before backend (packaging/release pipelines included).
 - Dev mode: `backend/tsconfig.dev.json` maps `@midas/core` → `../core/src/index.ts` so tsx loads core **source directly** — no core build needed for `npm run dev`, `npm run dev:desktop` (spawns tsx with the dev tsconfig), or the db scripts. Production build (`tsc`) still resolves `@midas/core` from the built `dist/` via the workspace symlink.
 - Desktop packaging: `desktop/scripts/copy-backend-deps.js` detects workspace packages (symlinks in `node_modules`) and copies only their `dist/` + `package.json` instead of the whole source tree.
+- **Frontend API abstraction**: the frontend now routes all API calls through `frontend/src/api/transport.ts`. When running inside Electron (`window.electronAPI.isElectron`), calls go over **IPC** to the desktop main process, which invokes `@midas/core` directly. Otherwise they go over **HTTP** to the backend. All 13 resource modules (`binders`, `accounts`, `transactions`, `categories`, `payees`, `tags`, `payment-schedules`, `reports`, `attachments`, `sync`, `remote`, `serverConfig`) were refactored to use the transport.
+- **Desktop no longer runs a backend server**: `desktop/src/main/index.ts` removed the backend HTTP child process. Instead it initializes core (`initCore()` runs DB migrations), registers IPC handlers (`ipc-handlers.ts`), and exposes them via the preload (`electronAPI.*`). A lightweight auto-sync scheduler (`sync-scheduler.ts`) replaces the backend's toad-scheduler for `autoSyncInterval` targets.
+- **Core loading in desktop**: `desktop/src/main/core-loader.ts` uses `createRequire` to load `@midas/core` (and `drizzle-orm`'s migrator) from the Electron-rebuilt dependency copy at `desktop/release-backend-deps/node_modules` (dev) / `resources/backend/node_modules` (packaged). Native modules there are rebuilt for Electron's ABI, keeping the root `node_modules` at the system-Node ABI for web dev.
+- **File attachments in desktop**: attachment files are transferred as `ArrayBuffer` over IPC and rendered as `data:` base64 URLs (`AsyncImage`/`AttachmentImage` components) instead of HTTP URLs. Binder/Actual-Budget imports and exports also transfer files as `ArrayBuffer` over IPC.
 
 ### Not done (future work)
-- `@midas/react` (frontend) still talks to the API over HTTP; it does not import `@midas/core` yet.
-- `@midas/desktop` still bundles the built backend + its deps; it does not call `@midas/core` directly yet (though the packaged copy of core is now trimmed to `dist/` + `package.json`).
+- `@midas/react` (frontend) still talks to the API over HTTP in **web/remote** mode; in **desktop** mode it now calls `@midas/core` directly over IPC.
+- The desktop auto-sync scheduler (`sync-scheduler.ts`) is a simple `setInterval`-based replacement for the backend's `toad-scheduler`; it does not support run-immediately or overrun-prevention semantics.
 - Production backend build (`npm run build --workspace=backend`) requires `@midas/core` to be built first (`npm run build:core`).
+- When core source changes, desktop dev requires regenerating the Electron deps copy (`npm run copy:deps --workspace=desktop`) to pick up the new core build.
 
 ---
 
@@ -528,9 +533,16 @@ app.get('/binders/:id/accounts', async (req, reply) => {
 ### Using Core Directly (Desktop/Offline)
 
 ```typescript
-// @midas/desktop or any client
-import { listAccounts, createAccount } from '@midas/core';
+// frontend API layer (routes to IPC in Electron, HTTP in web)
+import { listAccounts } from '../frontend/src/api/accounts';
 
 const { accounts } = await listAccounts(binderId);
-const newAccount = await createAccount(binderId, { name: 'Checking', type: 'checking' });
+```
+
+```typescript
+// desktop main process (IPC handler)
+import { ipcMain } from 'electron';
+import { loadCore } from './core-loader';
+
+ipcMain.handle('accounts:list', async (_e, binderId) => loadCore().listAccounts(binderId));
 ```

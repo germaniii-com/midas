@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi } from './transport';
 
 export interface CashFlowRow {
   date: string;
@@ -81,57 +81,61 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
   return s ? `?${s}` : '';
 }
 
-export async function getCashFlow(
-  binderId: string,
-  params?: CashFlowParams,
-): Promise<CashFlowRow[]> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/reports/cash-flow${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+export function getCashFlow(binderId: string, params?: CashFlowParams): Promise<CashFlowRow[]> {
+  return callApi(
+    'getCashFlow',
+    `/api/binders/${binderId}/reports/cash-flow${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+    undefined,
+    binderId,
+    params,
   );
-  if (!res.ok) throw new Error('Failed to fetch cash flow data');
-  return res.json();
 }
 
-export async function getSpendingBreakdown(
+export function getSpendingBreakdown(
   binderId: string,
   params?: SpendingBreakdownParams,
 ): Promise<SpendingRow[]> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/reports/spending-breakdown${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+  return callApi(
+    'getSpendingBreakdown',
+    `/api/binders/${binderId}/reports/spending-breakdown${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+    undefined,
+    binderId,
+    params,
   );
-  if (!res.ok) throw new Error('Failed to fetch spending breakdown');
-  return res.json();
 }
 
-export async function getPayeeAnalysis(
+export function getPayeeAnalysis(
   binderId: string,
   params?: PayeeAnalysisParams,
 ): Promise<PayeeRow[]> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/reports/payee-analysis${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+  return callApi(
+    'getPayeeAnalysis',
+    `/api/binders/${binderId}/reports/payee-analysis${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+    undefined,
+    binderId,
+    params,
   );
-  if (!res.ok) throw new Error('Failed to fetch payee analysis');
-  return res.json();
 }
 
-export async function getForecast(
-  binderId: string,
-  params: ForecastParams,
-): Promise<ForecastRow[]> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/reports/forecast${buildQuery(params as unknown as Record<string, string | number | boolean | undefined>)}`,
+export function getForecast(binderId: string, params: ForecastParams): Promise<ForecastRow[]> {
+  return callApi(
+    'getForecast',
+    `/api/binders/${binderId}/reports/forecast${buildQuery(params as unknown as Record<string, string | number | boolean | undefined>)}`,
+    undefined,
+    binderId,
+    params,
   );
-  if (!res.ok) throw new Error('Failed to fetch forecast');
-  return res.json();
 }
 
-export async function getAccountTrends(
+export function getAccountTrends(
   binderId: string,
   params?: AccountTrendsParams,
 ): Promise<AccountTrendSeries[]> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/reports/account-trends${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+  return callApi(
+    'getAccountTrends',
+    `/api/binders/${binderId}/reports/account-trends${buildQuery(params as Record<string, string | number | boolean | undefined>)}`,
+    undefined,
+    binderId,
+    params,
   );
-  if (!res.ok) throw new Error('Failed to fetch account trends');
-  return res.json();
 }

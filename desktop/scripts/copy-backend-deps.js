@@ -172,7 +172,7 @@ try {
       ` --module-dir "${nodeModulesDir}"` +
       ` --arch "${process.arch}"` +
       ` --force`,
-    { cwd: rootDir, stdio: 'inherit', timeout: 120000 },
+    { cwd: targetDir, stdio: 'inherit', timeout: 120000 },
   );
   console.log('Native modules rebuilt successfully');
 } catch (err) {

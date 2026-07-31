@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi, callApiVoid } from './transport';
 
 export interface Category {
   id: string;
@@ -15,60 +15,59 @@ export interface UpdateCategoryData {
   name?: string;
 }
 
-export async function getCategories(binderId: string): Promise<Category[]> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/categories`);
-  if (!res.ok) throw new Error('Failed to fetch categories');
-  return res.json();
+export function getCategories(binderId: string): Promise<Category[]> {
+  return callApi('getCategories', `/api/binders/${binderId}/categories`, undefined, binderId);
 }
 
-export async function getCategory(
-  binderId: string,
-  categoryId: string,
-): Promise<Category> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/categories/${categoryId}`);
-  if (!res.ok) throw new Error('Category not found');
-  return res.json();
+export function getCategory(binderId: string, categoryId: string): Promise<Category> {
+  return callApi(
+    'getCategory',
+    `/api/binders/${binderId}/categories/${categoryId}`,
+    undefined,
+    binderId,
+    categoryId,
+  );
 }
 
-export async function createCategory(
-  binderId: string,
-  data: CreateCategoryData,
-): Promise<Category> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/categories/create`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to create category' }));
-    throw new Error(err.error || 'Failed to create category');
-  }
-  return res.json();
+export function createCategory(binderId: string, data: CreateCategoryData): Promise<Category> {
+  return callApi(
+    'createCategory',
+    `/api/binders/${binderId}/categories/create`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    binderId,
+    data,
+  );
 }
 
-export async function updateCategory(
+export function updateCategory(
   binderId: string,
   categoryId: string,
   data: UpdateCategoryData,
 ): Promise<Category> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/categories/${categoryId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to update category' }));
-    throw new Error(err.error || 'Failed to update category');
-  }
-  return res.json();
+  return callApi(
+    'updateCategory',
+    `/api/binders/${binderId}/categories/${categoryId}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    binderId,
+    categoryId,
+    data,
+  );
 }
 
-export async function deleteCategory(
-  binderId: string,
-  categoryId: string,
-): Promise<void> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/categories/${categoryId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error('Failed to delete category');
+export function deleteCategory(binderId: string, categoryId: string): Promise<void> {
+  return callApiVoid(
+    'deleteCategory',
+    `/api/binders/${binderId}/categories/${categoryId}`,
+    { method: 'DELETE' },
+    binderId,
+    categoryId,
+  );
 }

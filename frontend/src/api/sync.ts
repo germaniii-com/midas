@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi, callApiVoid, callApiArrayBuffer } from './transport';
 
 export interface SyncTarget {
   id: string;
@@ -28,90 +28,83 @@ export interface CreateSyncTargetData {
   autoSyncInterval?: number;
 }
 
-export async function getSyncTargets(binderId: string): Promise<SyncTarget[]> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/sync-targets`);
-  if (!res.ok) throw new Error('Failed to fetch sync targets');
-  return res.json();
+export function getSyncTargets(binderId: string): Promise<SyncTarget[]> {
+  return callApi('getSyncTargets', `/api/binders/${binderId}/sync-targets`, undefined, binderId);
 }
 
-export async function createSyncTarget(
+export function createSyncTarget(
   binderId: string,
   data: CreateSyncTargetData,
 ): Promise<SyncTarget> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/sync-targets`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to create sync target' }));
-    throw new Error(err.error || 'Failed to create sync target');
-  }
-  return res.json();
+  return callApi(
+    'createSyncTarget',
+    `/api/binders/${binderId}/sync-targets`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    binderId,
+    data,
+  );
 }
 
-export async function updateSyncTarget(
+export function updateSyncTarget(
   binderId: string,
   targetId: string,
   data: Partial<CreateSyncTargetData>,
 ): Promise<SyncTarget> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/sync-targets/${targetId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to update sync target' }));
-    throw new Error(err.error || 'Failed to update sync target');
-  }
-  return res.json();
+  return callApi(
+    'updateSyncTarget',
+    `/api/binders/${binderId}/sync-targets/${targetId}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    binderId,
+    targetId,
+    data,
+  );
 }
 
-export async function deleteSyncTarget(
-  binderId: string,
-  targetId: string,
-): Promise<void> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/sync-targets/${targetId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error('Failed to delete sync target');
+export function deleteSyncTarget(binderId: string, targetId: string): Promise<void> {
+  return callApiVoid(
+    'deleteSyncTarget',
+    `/api/binders/${binderId}/sync-targets/${targetId}`,
+    { method: 'DELETE' },
+    binderId,
+    targetId,
+  );
 }
 
-export async function triggerSync(
-  binderId: string,
-  targetId: string,
-): Promise<void> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/sync-targets/${targetId}/sync`,
+export function triggerSync(binderId: string, targetId: string): Promise<void> {
+  return callApiVoid(
+    'triggerSync',
+    `/api/binders/${binderId}/sync-targets/${targetId}/sync`,
     { method: 'POST' },
+    binderId,
+    targetId,
   );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to trigger sync' }));
-    throw new Error(err.error || 'Failed to trigger sync');
-  }
 }
 
-export async function getSyncStatus(
-  binderId: string,
-  targetId: string,
-): Promise<SyncStatus> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/sync-targets/${targetId}/status`,
+export function getSyncStatus(binderId: string, targetId: string): Promise<SyncStatus> {
+  return callApi(
+    'getSyncStatus',
+    `/api/binders/${binderId}/sync-targets/${targetId}/status`,
+    undefined,
+    binderId,
+    targetId,
   );
-  if (!res.ok) throw new Error('Failed to get sync status');
-  return res.json();
 }
 
-export async function exportRemoteBinder(
-  binderId: string,
-  targetId: string,
-): Promise<Blob> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/sync-targets/${targetId}/export`,
+export async function exportRemoteBinder(binderId: string, targetId: string): Promise<Blob> {
+  const buffer = await callApiArrayBuffer(
+    'exportRemoteBinder',
+    `/api/binders/${binderId}/sync-targets/${targetId}/export`,
+    undefined,
+    binderId,
+    targetId,
   );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to export from remote' }));
-    throw new Error(err.error || 'Failed to export from remote');
-  }
-  return res.blob();
+  return new Blob([buffer], { type: 'application/sql' });
 }

@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi, callApiVoid } from './transport';
 
 export interface TransactionTag {
   id: string;
@@ -61,87 +61,89 @@ export interface GetTransactionsResponse {
   totalAmount: string;
 }
 
-export async function getTransactions(
+export interface TransactionFilters {
+  accountId?: string;
+  categoryId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export function getTransactions(
   binderId: string,
   accountId?: string,
   categoryId?: string,
   limit?: number,
   offset?: number,
 ): Promise<GetTransactionsResponse> {
+  const filters: TransactionFilters = { accountId, categoryId, limit, offset };
   const params = new URLSearchParams();
   if (accountId) params.set('accountId', accountId);
   if (categoryId) params.set('categoryId', categoryId);
   if (limit !== undefined) params.set('limit', String(limit));
   if (offset !== undefined) params.set('offset', String(offset));
   const qs = params.toString();
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions${qs ? `?${qs}` : ''}`,
+
+  return callApi(
+    'getTransactions',
+    `/api/binders/${binderId}/transactions${qs ? `?${qs}` : ''}`,
+    undefined,
+    binderId,
+    filters,
   );
-  if (!res.ok) throw new Error('Failed to fetch transactions');
-  return res.json();
 }
 
-export async function getTransaction(
-  binderId: string,
-  transactionId: string,
-): Promise<Transaction> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}`,
+export function getTransaction(binderId: string, transactionId: string): Promise<Transaction> {
+  return callApi(
+    'getTransaction',
+    `/api/binders/${binderId}/transactions/${transactionId}`,
+    undefined,
+    binderId,
+    transactionId,
   );
-  if (!res.ok) throw new Error('Transaction not found');
-  return res.json();
 }
 
-export async function createTransaction(
+export function createTransaction(
   binderId: string,
   data: CreateTransactionData,
 ): Promise<Transaction> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/create`,
+  return callApi(
+    'createTransaction',
+    `/api/binders/${binderId}/transactions/create`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     },
+    binderId,
+    data,
   );
-  if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: 'Failed to create transaction' }));
-    throw new Error(err.error || 'Failed to create transaction');
-  }
-  return res.json();
 }
 
-export async function updateTransaction(
+export function updateTransaction(
   binderId: string,
   transactionId: string,
   data: UpdateTransactionData,
 ): Promise<Transaction> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}`,
+  return callApi(
+    'updateTransaction',
+    `/api/binders/${binderId}/transactions/${transactionId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     },
+    binderId,
+    transactionId,
+    data,
   );
-  if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: 'Failed to update transaction' }));
-    throw new Error(err.error || 'Failed to update transaction');
-  }
-  return res.json();
 }
 
-export async function deleteTransaction(
-  binderId: string,
-  transactionId: string,
-): Promise<void> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}`,
+export function deleteTransaction(binderId: string, transactionId: string): Promise<void> {
+  return callApiVoid(
+    'deleteTransaction',
+    `/api/binders/${binderId}/transactions/${transactionId}`,
     { method: 'DELETE' },
+    binderId,
+    transactionId,
   );
-  if (!res.ok) throw new Error('Failed to delete transaction');
 }

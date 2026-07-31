@@ -1,4 +1,5 @@
-import { getApiUrl, apiFetch, getServerPassword } from '.';
+import { callApi, callApiVoid, uploadFile, isElectron, arrayBufferToBase64 } from './transport';
+import { getApiUrl, getServerPassword } from './serverConfig';
 
 export interface TransactionAttachment {
   id: string;
@@ -8,55 +9,84 @@ export interface TransactionAttachment {
   createdAt: string | null;
 }
 
-export async function getAttachments(
+export interface AttachmentFile {
+  buffer: ArrayBuffer;
+  mimeType: string;
+  fileName: string;
+}
+
+export function getAttachments(
   binderId: string,
   transactionId: string,
 ): Promise<TransactionAttachment[]> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments`,
+  return callApi(
+    'getAttachments',
+    `/api/binders/${binderId}/transactions/${transactionId}/attachments`,
+    undefined,
+    binderId,
+    transactionId,
   );
-  if (!res.ok) throw new Error('Failed to fetch attachments');
-  return res.json();
 }
 
-export async function uploadAttachment(
+export function uploadAttachment(
   binderId: string,
   transactionId: string,
   file: File,
 ): Promise<TransactionAttachment> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments`,
-    { method: 'POST', body: formData },
+  return uploadFile(
+    'uploadAttachment',
+    `/api/binders/${binderId}/transactions/${transactionId}/attachments`,
+    file,
+    binderId,
+    transactionId,
   );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to upload attachment' }));
-    throw new Error(err.error || 'Failed to upload attachment');
-  }
-  return res.json();
 }
 
-export function getAttachmentPreviewUrl(binderId: string, transactionId: string, attachmentId: string): string {
+async function getAttachmentFileData(attachmentId: string): Promise<AttachmentFile | null> {
+  return callApi('getAttachmentFile', '', undefined, attachmentId);
+}
+
+export async function getAttachmentPreviewUrl(
+  binderId: string,
+  transactionId: string,
+  attachmentId: string,
+): Promise<string> {
+  if (isElectron()) {
+    const file = await getAttachmentFileData(attachmentId);
+    if (!file) throw new Error('Attachment not found');
+    return arrayBufferToBase64(file.buffer, file.mimeType);
+  }
   const pw = getServerPassword();
   const auth = pw ? `&auth=${encodeURIComponent(pw)}` : '';
   return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}?preview=true${auth}`;
 }
 
-export function getAttachmentThumbnailUrl(binderId: string, transactionId: string, attachmentId: string): string {
+export async function getAttachmentThumbnailUrl(
+  binderId: string,
+  transactionId: string,
+  attachmentId: string,
+): Promise<string> {
+  if (isElectron()) {
+    const file = await getAttachmentFileData(attachmentId);
+    if (!file) throw new Error('Attachment not found');
+    return arrayBufferToBase64(file.buffer, file.mimeType);
+  }
   const pw = getServerPassword();
   const auth = pw ? `?auth=${encodeURIComponent(pw)}` : '';
   return `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}/thumbnail${auth}`;
 }
 
-export async function deleteAttachment(
+export function deleteAttachment(
   binderId: string,
   transactionId: string,
   attachmentId: string,
 ): Promise<void> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}`,
+  return callApiVoid(
+    'deleteAttachment',
+    `/api/binders/${binderId}/transactions/${transactionId}/attachments/${attachmentId}`,
     { method: 'DELETE' },
+    binderId,
+    transactionId,
+    attachmentId,
   );
-  if (!res.ok) throw new Error('Failed to delete attachment');
 }

@@ -15,14 +15,26 @@ import {
   ModalBody,
   ModalFooter,
 } from '@heroui/react';
-import { ArrowLeftIcon, TrashIcon, PlusIcon, PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  TrashIcon,
+  PlusIcon,
+  PhotoIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import DeleteConfirmModal from '../../../components/DeleteConfirmModal';
 import { getAccounts, type Account } from '../../../api/accounts';
 import { toastSuccess, toastError, getErrorMessage } from '../../../utils/toast';
 import { getPayees, createPayee, type Payee } from '../../../api/payees';
 import { getTags, createTag, type Tag } from '../../../api/tags';
 import { getTransaction, updateTransaction, deleteTransaction } from '../../../api/transactions';
-import { getAttachments, uploadAttachment, deleteAttachment, getAttachmentPreviewUrl, getAttachmentThumbnailUrl, type TransactionAttachment } from '../../../api/attachments';
+import {
+  getAttachments,
+  uploadAttachment,
+  deleteAttachment,
+  type TransactionAttachment,
+} from '../../../api/attachments';
+import { AttachmentImage } from '../../../components/AsyncImage';
 
 export default function EditTransactionPage() {
   const { id, transactionId } = useParams<{ id: string; transactionId: string }>();
@@ -444,10 +456,14 @@ export default function EditTransactionPage() {
               const isImage = att.mimeType?.startsWith('image/');
               return isImage ? (
                 <div key={att.id} className="relative group">
-                  <img
-                    src={getAttachmentThumbnailUrl(id!, transactionId!, att.id)}
+                  <AttachmentImage
+                    binderId={id!}
+                    transactionId={transactionId!}
+                    attachmentId={att.id}
+                    kind="thumbnail"
                     alt={att.fileName}
                     className="h-16 w-16 cursor-pointer rounded-lg object-cover border border-default-200"
+                    placeholderClassName="h-16 w-16 rounded-lg border border-default-200"
                     onClick={() => setPreviewAttachmentId(att.id)}
                   />
                   <button
@@ -487,11 +503,7 @@ export default function EditTransactionPage() {
               disabled={uploading}
               className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-default-300 bg-default-50 text-default-400 hover:border-primary hover:text-primary hover:bg-primary/5 disabled:opacity-50 transition-all duration-200 active:scale-95"
             >
-              {uploading ? (
-                <Spinner size="sm" />
-              ) : (
-                <PhotoIcon width={20} />
-              )}
+              {uploading ? <Spinner size="sm" /> : <PhotoIcon width={20} />}
             </button>
           </div>
         </div>
@@ -528,7 +540,12 @@ export default function EditTransactionPage() {
       </DeleteConfirmModal>
 
       {/* Create Payee Modal */}
-      <Modal isOpen={payeeModalOpen} onClose={() => setPayeeModalOpen(false)} placement="center" backdrop="blur">
+      <Modal
+        isOpen={payeeModalOpen}
+        onClose={() => setPayeeModalOpen(false)}
+        placement="center"
+        backdrop="blur"
+      >
         <ModalContent>
           <ModalHeader>New Payee</ModalHeader>
           <ModalBody>
@@ -552,7 +569,12 @@ export default function EditTransactionPage() {
       </Modal>
 
       {/* Create Tag Modal */}
-      <Modal isOpen={tagModalOpen} onClose={() => setTagModalOpen(false)} placement="center" backdrop="blur">
+      <Modal
+        isOpen={tagModalOpen}
+        onClose={() => setTagModalOpen(false)}
+        placement="center"
+        backdrop="blur"
+      >
         <ModalContent>
           <ModalHeader>New Tag</ModalHeader>
           <ModalBody className="flex flex-col gap-4">
@@ -570,7 +592,7 @@ export default function EditTransactionPage() {
                   type="color"
                   value={newTagColor}
                   onChange={(e) => setNewTagColor(e.target.value)}
-                   className="h-10 w-16 cursor-pointer bg-transparent p-1 rounded-lg transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-primary"
+                  className="h-10 w-16 cursor-pointer bg-transparent p-1 rounded-lg transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-primary"
                 />
                 <span className="text-sm font-mono text-app-muted">{newTagColor}</span>
               </div>
@@ -602,10 +624,14 @@ export default function EditTransactionPage() {
                 {attachments.find((a) => a.id === previewAttachmentId)?.fileName}
               </ModalHeader>
               <ModalBody className="flex items-center justify-center p-4">
-                <img
-                  src={getAttachmentPreviewUrl(id!, transactionId!, previewAttachmentId)}
+                <AttachmentImage
+                  binderId={id!}
+                  transactionId={transactionId!}
+                  attachmentId={previewAttachmentId}
+                  kind="preview"
                   alt={attachments.find((a) => a.id === previewAttachmentId)?.fileName || 'Preview'}
                   className="max-h-[70vh] w-auto rounded-lg object-contain"
+                  placeholderClassName="h-64 w-64 rounded-lg bg-default-100"
                 />
               </ModalBody>
             </>

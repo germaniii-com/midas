@@ -1,96 +1,14 @@
 import { app, BrowserWindow } from 'electron';
-import { spawn, type ChildProcess } from 'child_process';
-import { createServer } from 'net';
-import type { AddressInfo } from 'net';
 import path from 'path';
+import { registerIpcHandlers, initCore } from './ipc-handlers';
+import { SyncScheduler } from './sync-scheduler';
+import { getDatabaseDir } from './core-loader';
 
-let backendProcess: ChildProcess | null = null;
-let backendPort = 5001;
-
-function findFreePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as AddressInfo;
-      server.close(() => resolve(port));
-    });
-    server.on('error', reject);
-  });
-}
-
-function waitForServer(url: string, timeout = 30000): Promise<void> {
-  const start = Date.now();
-  return new Promise((resolve, reject) => {
-    const check = async () => {
-      try {
-        const res = await fetch(url);
-        if (res.ok) return resolve();
-      } catch {}
-      if (Date.now() - start > timeout) {
-        return reject(new Error(`Server at ${url} not ready within ${timeout}ms`));
-      }
-      setTimeout(check, 200);
-    };
-    check();
-  });
-}
-
-function getBackendDir(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'backend');
-  }
-  return path.resolve(__dirname, '..', '..', '..', 'backend');
-}
-
-function getDatabaseDir(): string {
-  if (app.isPackaged) {
-    return path.join(app.getPath('userData'), 'data');
-  }
-  return path.resolve(__dirname, '..', '..', '..', 'sqlite_data');
-}
-
-async function startBackend(): Promise<number> {
-  const port = await findFreePort();
-  const isPackaged = app.isPackaged;
-  const backendDir = getBackendDir();
+function configureEnvironment() {
   const dbDir = getDatabaseDir();
-
-  const env: Record<string, string> = {
-    PORT: String(port),
-    NODE_ENV: isPackaged ? 'production' : 'development',
-    STORAGE_MODE: 'local',
-    DATABASE_DIR: dbDir,
-    PATH: process.env.PATH ?? '',
-    HOME: process.env.HOME ?? '',
-  };
-
-  if (isPackaged) {
-    backendProcess = spawn(process.execPath, ['dist/index.js'], {
-      cwd: backendDir,
-      env: { ...env, ELECTRON_RUN_AS_NODE: '1' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } else {
-    backendProcess = spawn('npx', ['tsx', '--tsconfig', 'tsconfig.dev.json', 'src/index.ts'], {
-      cwd: backendDir,
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  }
-
-  backendProcess.stdout?.on('data', (data: Buffer) => {
-    console.log(`[backend] ${data.toString().trim()}`);
-  });
-  backendProcess.stderr?.on('data', (data: Buffer) => {
-    console.error(`[backend] ${data.toString().trim()}`);
-  });
-
-  backendProcess.on('exit', (code) => {
-    console.log(`Backend process exited with code ${code}`);
-  });
-
-  await waitForServer(`http://127.0.0.1:${port}/api/health`);
-  return port;
+  process.env.DATABASE_DIR = dbDir;
+  process.env.STORAGE_MODE = 'local';
+  process.env.NODE_ENV = app.isPackaged ? 'production' : 'development';
 }
 
 function createWindow() {
@@ -100,7 +18,6 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'index.mjs'),
       sandbox: false,
-      additionalArguments: [`--backend-url=http://127.0.0.1:${backendPort}`],
     },
   });
 
@@ -117,30 +34,32 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   try {
-    backendPort = await startBackend();
+    configureEnvironment();
+    initCore();
+    registerIpcHandlers();
+
+    SyncScheduler.init();
+    SyncScheduler.getInstance()
+      .loadAll()
+      .catch((err) => {
+        console.error('Failed to load auto-sync jobs:', err);
+      });
+
     createWindow();
   } catch (err) {
-    console.error('Failed to start backend:', err);
+    console.error('Failed to start:', err);
     app.quit();
   }
 });
 
 app.on('window-all-closed', () => {
-  cleanup();
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
-  cleanup();
+  SyncScheduler.getInstance().removeAll();
 });
-
-function cleanup() {
-  if (backendProcess) {
-    backendProcess.kill();
-    backendProcess = null;
-  }
-}

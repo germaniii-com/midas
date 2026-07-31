@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi, callApiArrayBuffer, uploadForm } from './transport';
 
 export interface Binder {
   id: string;
@@ -19,67 +19,66 @@ export interface CreateBinderData {
   currency?: string;
 }
 
-export async function getBinders(): Promise<Binder[]> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders`);
-  if (!res.ok) throw new Error('Failed to fetch binders');
-  return res.json();
+export function getBinders(): Promise<Binder[]> {
+  return callApi('getBinders', '/api/binders');
 }
 
-export async function getBinderById(id: string): Promise<Binder> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${id}`);
-  if (!res.ok) throw new Error('Binder not found');
-  return res.json();
+export function getBinderById(id: string): Promise<Binder> {
+  return callApi('getBinderById', `/api/binders/${id}`, undefined, id);
 }
 
-export async function createBinder(data: CreateBinderData): Promise<Binder> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to create binder' }));
-    throw new Error(err.error || 'Failed to create binder');
-  }
-  return res.json();
+export function createBinder(data: CreateBinderData): Promise<Binder> {
+  return callApi(
+    'createBinder',
+    '/api/binders',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    data,
+  );
 }
 
-export async function loginToBinder(
+export function loginToBinder(
   name: string,
-  password: string
+  password: string,
 ): Promise<{ id: string; name: string }> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, password }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Login failed' }));
-    throw new Error(err.error || 'Login failed');
-  }
-  return res.json();
+  return callApi(
+    'loginToBinder',
+    '/api/binders/login',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, password }),
+    },
+    name,
+    password,
+  );
 }
 
-export async function updateBinder(
-  id: string,
-  data: UpdateBinderData,
-): Promise<Binder> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to update binder' }));
-    throw new Error(err.error || 'Failed to update binder');
-  }
-  return res.json();
+export function updateBinder(id: string, data: UpdateBinderData): Promise<Binder> {
+  return callApi(
+    'updateBinder',
+    `/api/binders/${id}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    id,
+    data,
+  );
 }
 
 export async function exportBinder(id: string): Promise<Blob> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${id}/export`);
-  if (!res.ok) throw new Error('Failed to export binder');
-  return res.blob();
+  const buffer = await callApiArrayBuffer(
+    'exportBinder',
+    `/api/binders/${id}/export`,
+    undefined,
+    id,
+  );
+  return new Blob([buffer], { type: 'application/sql' });
 }
 
 export interface ImportBinderData {
@@ -89,43 +88,17 @@ export interface ImportBinderData {
   currency?: string;
 }
 
-export async function importBinder(
-  file: File,
-  data: ImportBinderData,
-): Promise<Binder> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('password', data.password);
-  if (data.name) formData.append('name', data.name);
-  if (data.description) formData.append('description', data.description);
-  if (data.currency) formData.append('currency', data.currency);
-  const res = await apiFetch(`${getApiUrl()}/api/binders/import`, {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to import binder' }));
-    throw new Error(err.error || 'Failed to import binder');
-  }
-  return res.json();
+export function importBinder(file: File, data: ImportBinderData): Promise<Binder> {
+  const fields: Record<string, string> = { password: data.password };
+  if (data.name) fields.name = data.name;
+  if (data.description) fields.description = data.description;
+  if (data.currency) fields.currency = data.currency;
+  return uploadForm('importBinder', '/api/binders/import', file, fields);
 }
 
-export async function importActualBinder(
-  file: File,
-  data: ImportBinderData,
-): Promise<Binder> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('password', data.password);
-  if (data.name) formData.append('name', data.name);
-  if (data.currency) formData.append('currency', data.currency);
-  const res = await apiFetch(`${getApiUrl()}/api/binders/import-actual`, {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to import binder' }));
-    throw new Error(err.error || 'Failed to import binder');
-  }
-  return res.json();
+export function importActualBinder(file: File, data: ImportBinderData): Promise<Binder> {
+  const fields: Record<string, string> = { password: data.password };
+  if (data.name) fields.name = data.name;
+  if (data.currency) fields.currency = data.currency;
+  return uploadForm('importActualBinder', '/api/binders/import-actual', file, fields);
 }

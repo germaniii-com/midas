@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi, callApiVoid } from './transport';
 
 export interface CategoryInfo {
   id: string;
@@ -33,73 +33,61 @@ export interface UpdateAccountData {
   categoryIds?: string[];
 }
 
-export async function getAccounts(binderId: string): Promise<{ accounts: Account[]; categorySums: CategorySum[] }> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/accounts`);
-  if (!res.ok) throw new Error('Failed to fetch accounts');
-  return res.json();
+export function getAccounts(
+  binderId: string,
+): Promise<{ accounts: Account[]; categorySums: CategorySum[] }> {
+  return callApi('getAccounts', `/api/binders/${binderId}/accounts`, undefined, binderId);
 }
 
-export async function getAccount(
-  binderId: string,
-  accountId: string,
-): Promise<Account> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/accounts/${accountId}`,
+export function getAccount(binderId: string, accountId: string): Promise<Account> {
+  return callApi(
+    'getAccount',
+    `/api/binders/${binderId}/accounts/${accountId}`,
+    undefined,
+    binderId,
+    accountId,
   );
-  if (!res.ok) throw new Error('Account not found');
-  return res.json();
 }
 
-export async function createAccount(
-  binderId: string,
-  data: CreateAccountData,
-): Promise<Account> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/accounts/create`,
+export function createAccount(binderId: string, data: CreateAccountData): Promise<Account> {
+  return callApi(
+    'createAccount',
+    `/api/binders/${binderId}/accounts/create`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     },
+    binderId,
+    data,
   );
-  if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: 'Failed to create account' }));
-    throw new Error(err.error || 'Failed to create account');
-  }
-  return res.json();
 }
 
-export async function updateAccount(
+export function updateAccount(
   binderId: string,
   accountId: string,
   data: UpdateAccountData,
 ): Promise<Account> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/accounts/${accountId}`,
+  return callApi(
+    'updateAccount',
+    `/api/binders/${binderId}/accounts/${accountId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     },
+    binderId,
+    accountId,
+    data,
   );
-  if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: 'Failed to update account' }));
-    throw new Error(err.error || 'Failed to update account');
-  }
-  return res.json();
 }
 
-export async function deleteAccount(
-  binderId: string,
-  accountId: string,
-): Promise<void> {
-  const res = await apiFetch(
-    `${getApiUrl()}/api/binders/${binderId}/accounts/${accountId}`,
+export function deleteAccount(binderId: string, accountId: string): Promise<void> {
+  return callApiVoid(
+    'deleteAccount',
+    `/api/binders/${binderId}/accounts/${accountId}`,
     { method: 'DELETE' },
+    binderId,
+    accountId,
   );
-  if (!res.ok) throw new Error('Failed to delete account');
 }

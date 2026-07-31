@@ -1,4 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
+import { callApi, callApiVoid } from './transport';
 
 export interface Tag {
   id: string;
@@ -18,60 +18,49 @@ export interface UpdateTagData {
   color?: string;
 }
 
-export async function getTags(binderId: string): Promise<Tag[]> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/tags`);
-  if (!res.ok) throw new Error('Failed to fetch tags');
-  return res.json();
+export function getTags(binderId: string): Promise<Tag[]> {
+  return callApi('getTags', `/api/binders/${binderId}/tags`, undefined, binderId);
 }
 
-export async function getTag(
-  binderId: string,
-  tagId: string,
-): Promise<Tag> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/tags/${tagId}`);
-  if (!res.ok) throw new Error('Tag not found');
-  return res.json();
+export function getTag(binderId: string, tagId: string): Promise<Tag> {
+  return callApi('getTag', `/api/binders/${binderId}/tags/${tagId}`, undefined, binderId, tagId);
 }
 
-export async function createTag(
-  binderId: string,
-  data: CreateTagData,
-): Promise<Tag> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/tags/create`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to create tag' }));
-    throw new Error(err.error || 'Failed to create tag');
-  }
-  return res.json();
+export function createTag(binderId: string, data: CreateTagData): Promise<Tag> {
+  return callApi(
+    'createTag',
+    `/api/binders/${binderId}/tags/create`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    binderId,
+    data,
+  );
 }
 
-export async function updateTag(
-  binderId: string,
-  tagId: string,
-  data: UpdateTagData,
-): Promise<Tag> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/tags/${tagId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to update tag' }));
-    throw new Error(err.error || 'Failed to update tag');
-  }
-  return res.json();
+export function updateTag(binderId: string, tagId: string, data: UpdateTagData): Promise<Tag> {
+  return callApi(
+    'updateTag',
+    `/api/binders/${binderId}/tags/${tagId}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    binderId,
+    tagId,
+    data,
+  );
 }
 
-export async function deleteTag(
-  binderId: string,
-  tagId: string,
-): Promise<void> {
-  const res = await apiFetch(`${getApiUrl()}/api/binders/${binderId}/tags/${tagId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error('Failed to delete tag');
+export function deleteTag(binderId: string, tagId: string): Promise<void> {
+  return callApiVoid(
+    'deleteTag',
+    `/api/binders/${binderId}/tags/${tagId}`,
+    { method: 'DELETE' },
+    binderId,
+    tagId,
+  );
 }

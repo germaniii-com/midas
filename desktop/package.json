@@ -12,10 +12,11 @@
     "url": "https://github.com/germaniii-com/midas.git"
   },
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "npm run ensure:core-deps && electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "copy:deps": "node scripts/copy-backend-deps.js",
+    "ensure:core-deps": "node scripts/ensure-core-deps.js",
     "package": "npm run copy:deps && npm run build && electron-builder --dir",
     "package:dist": "npm run copy:deps && npm run build && electron-builder",
     "package:mac": "npm run copy:deps && npm run build && electron-builder --mac",
@@ -37,17 +38,23 @@
       {
         "from": "../frontend/dist",
         "to": "frontend/dist",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../backend/dist",
         "to": "backend/dist",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "release-backend-deps/node_modules",
         "to": "backend/node_modules",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "release-backend-deps/backend-package.json",
@@ -56,7 +63,9 @@
       {
         "from": "../backend/drizzle",
         "to": "backend/drizzle",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
@@ -79,6 +88,9 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
+  },
+  "dependencies": {
+    "@midas/core": "1.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.6",

@@ -1,5 +1,4 @@
-import { getApiUrl, apiFetch } from '.';
-import type { Binder } from './binders';
+import { callApi } from './transport';
 
 export interface RemoteBinder {
   id: string;
@@ -20,33 +19,32 @@ export interface PullRemoteBinderData {
   password: string;
 }
 
-export async function listRemoteBinders(
+export function listRemoteBinders(
   host: string,
   password: string,
 ): Promise<ListRemoteBindersResponse> {
-  const res = await apiFetch(`${getApiUrl()}/api/remote/list-binders`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ host, password }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to list remote binders' }));
-    throw new Error(err.error || 'Failed to list remote binders');
-  }
-  return res.json();
+  return callApi(
+    'listRemoteBinders',
+    '/api/remote/list-binders',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host, password }),
+    },
+    host,
+    password,
+  );
 }
 
-export async function pullRemoteBinder(
-  data: PullRemoteBinderData,
-): Promise<Binder> {
-  const res = await apiFetch(`${getApiUrl()}/api/remote/pull-binder`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to pull binder' }));
-    throw new Error(err.error || 'Failed to pull binder');
-  }
-  return res.json();
+export function pullRemoteBinder(data: PullRemoteBinderData): Promise<RemoteBinder> {
+  return callApi(
+    'pullRemoteBinder',
+    '/api/remote/pull-binder',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    data,
+  );
 }
