@@ -1,8 +1,6 @@
 import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 import { sql } from 'drizzle-orm';
-import { performSync } from './sync-engine';
-import { db } from '../db';
-import { syncTargets } from '../db/schema';
+import { performSync, db, syncTargets } from '@midas/core';
 
 export class SyncScheduler {
   private scheduler: ToadScheduler;
@@ -26,7 +24,12 @@ export class SyncScheduler {
     return SyncScheduler._instance;
   }
 
-  add(targetId: string, intervalMinutes: number, binderId: string, target: { host: string; password: string }) {
+  add(
+    targetId: string,
+    intervalMinutes: number,
+    binderId: string,
+    target: { host: string; password: string },
+  ) {
     this.remove(targetId);
 
     const task = new AsyncTask(
@@ -37,11 +40,10 @@ export class SyncScheduler {
       },
     );
 
-    const job = new SimpleIntervalJob(
-      { minutes: intervalMinutes, runImmediately: false },
-      task,
-      { id: `auto-sync-${targetId}`, preventOverrun: true },
-    );
+    const job = new SimpleIntervalJob({ minutes: intervalMinutes, runImmediately: false }, task, {
+      id: `auto-sync-${targetId}`,
+      preventOverrun: true,
+    });
 
     this.scheduler.addSimpleIntervalJob(job);
     this.jobs.set(targetId, job);
@@ -66,10 +68,10 @@ export class SyncScheduler {
   }
 
   async loadAll() {
-    const targets = await db.select().from(syncTargets)
-      .where(
-        sql`${syncTargets.autoSyncInterval} IS NOT NULL`,
-      );
+    const targets = await db
+      .select()
+      .from(syncTargets)
+      .where(sql`${syncTargets.autoSyncInterval} IS NOT NULL`);
 
     for (const target of targets) {
       if (target.autoSyncInterval && target.autoSyncInterval > 0) {

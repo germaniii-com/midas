@@ -1,22 +1,15 @@
 import { FastifyInstance } from 'fastify';
-import { eq, and } from 'drizzle-orm';
-import sharp from 'sharp';
-import { db } from '../db';
-import { transactionAttachments } from '../db/schema';
-import { storage } from '../storage';
+import {
+  deleteAttachment,
+  getAttachment,
+  getAttachmentFile,
+  getAttachmentThumbnail,
+  listAttachments,
+  uploadAttachment,
+} from '@midas/core';
 
-async function getAttachment(transactionId: string, attachmentId: string) {
-  const [attachment] = await db
-    .select()
-    .from(transactionAttachments)
-    .where(
-      and(
-        eq(transactionAttachments.id, attachmentId),
-        eq(transactionAttachments.transactionId, transactionId),
-      ),
-    )
-    .limit(1);
-  return attachment;
+async function getAttachmentRow(transactionId: string, attachmentId: string) {
+  return getAttachment(transactionId, attachmentId);
 }
 
 export async function attachmentRoutes(app: FastifyInstance) {
@@ -34,35 +27,13 @@ export async function attachmentRoutes(app: FastifyInstance) {
       for await (const chunk of data.file) {
         chunks.push(chunk);
       }
-      let buffer = Buffer.concat(chunks);
-      const fileName = data.filename;
-      let mimeType = data.mimetype || 'application/octet-stream';
+      const buffer = Buffer.concat(chunks);
 
-      const ext = fileName.includes('.') ? '.' + fileName.split('.').pop()!.toLowerCase() : '';
-
-      const isImage = mimeType.startsWith('image/') && mimeType !== 'image/gif';
-      if (isImage) {
-        buffer = Buffer.from(await sharp(buffer).webp({ quality: 80 }).toBuffer());
-        mimeType = 'image/webp';
-      }
-
-      const id = crypto.randomUUID();
-      const extension = isImage ? '.webp' : ext;
-      const objectName = storage.generateObjectName(binderId, transactionId, id, extension);
-      await storage.uploadFile(objectName, buffer, mimeType);
-
-      const [attachment] = await db
-        .insert(transactionAttachments)
-        .values({
-          id,
-          transactionId,
-          binderId,
-          fileName,
-          objectName,
-          mimeType,
-          fileSize: buffer.length,
-        })
-        .returning();
+      const attachment = await uploadAttachment(binderId, transactionId, {
+        buffer,
+        fileName: data.filename,
+        mimeType: data.mimetype || 'application/octet-stream',
+      });
 
       return reply.status(201).send(attachment);
     },
@@ -71,55 +42,46 @@ export async function attachmentRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string; transactionId: string } }>(
     '/binders/:id/transactions/:transactionId/attachments',
     async (req, reply) => {
-      const { transactionId } = req.params;
-
-      const attachments = await db
-        .select({
-          id: transactionAttachments.id,
-          fileName: transactionAttachments.fileName,
-          mimeType: transactionAttachments.mimeType,
-          fileSize: transactionAttachments.fileSize,
-          createdAt: transactionAttachments.createdAt,
-        })
-        .from(transactionAttachments)
-        .where(eq(transactionAttachments.transactionId, transactionId))
-        .orderBy(transactionAttachments.createdAt);
-
+      const { id: binderId, transactionId } = req.params;
+      const attachments = await listAttachments(binderId, transactionId);
       return reply.send(attachments);
     },
   );
 
-  app.get<{ Params: { id: string; transactionId: string; attachmentId: string }; Querystring: { preview?: string } }>(
-    '/binders/:id/transactions/:transactionId/attachments/:attachmentId',
-    async (req, reply) => {
-      const { transactionId, attachmentId } = req.params;
-      const preview = req.query.preview === 'true';
+  app.get<{
+    Params: { id: string; transactionId: string; attachmentId: string };
+    Querystring: { preview?: string };
+  }>('/binders/:id/transactions/:transactionId/attachments/:attachmentId', async (req, reply) => {
+    const { transactionId, attachmentId } = req.params;
+    const preview = req.query.preview === 'true';
 
-      const attachment = await getAttachment(transactionId, attachmentId);
-      if (!attachment) {
-        return reply.status(404).send({ error: 'Attachment not found' });
-      }
+    const attachment = await getAttachmentRow(transactionId, attachmentId);
+    if (!attachment) {
+      return reply.status(404).send({ error: 'Attachment not found' });
+    }
 
-      let buffer: Buffer;
-      try {
-        buffer = await storage.getFile(attachment.objectName);
-      } catch {
-        return reply.status(404).send({ error: 'File not found in storage' });
-      }
+    const file = await getAttachmentFile(attachmentId).catch(() => null);
+    if (!file) {
+      return reply.status(404).send({ error: 'File not found in storage' });
+    }
 
-      return reply
-        .header('Content-Type', attachment.mimeType || 'application/octet-stream')
-        .header('Content-Disposition', preview ? `inline; filename="${attachment.fileName}"` : `attachment; filename="${attachment.fileName}"`)
-        .send(buffer);
-    },
-  );
+    return reply
+      .header('Content-Type', file.mimeType)
+      .header(
+        'Content-Disposition',
+        preview
+          ? `inline; filename="${attachment.fileName}"`
+          : `attachment; filename="${attachment.fileName}"`,
+      )
+      .send(file.buffer);
+  });
 
   app.get<{ Params: { id: string; transactionId: string; attachmentId: string } }>(
     '/binders/:id/transactions/:transactionId/attachments/:attachmentId/thumbnail',
     async (req, reply) => {
       const { transactionId, attachmentId } = req.params;
 
-      const attachment = await getAttachment(transactionId, attachmentId);
+      const attachment = await getAttachmentRow(transactionId, attachmentId);
       if (!attachment) {
         return reply.status(404).send({ error: 'Attachment not found' });
       }
@@ -129,13 +91,15 @@ export async function attachmentRoutes(app: FastifyInstance) {
         return reply.status(400).send({ error: 'Thumbnail not available for non-image files' });
       }
 
-      const buffer = await storage.getFile(attachment.objectName);
-      const thumbnail = Buffer.from(await sharp(buffer).resize(120).webp({ quality: 70 }).toBuffer());
+      const thumbnail = await getAttachmentThumbnail(attachmentId).catch(() => null);
+      if (!thumbnail) {
+        return reply.status(404).send({ error: 'File not found in storage' });
+      }
 
       return reply
-        .header('Content-Type', 'image/webp')
+        .header('Content-Type', thumbnail.mimeType)
         .header('Cache-Control', 'public, max-age=86400')
-        .send(thumbnail);
+        .send(thumbnail.buffer);
     },
   );
 
@@ -144,18 +108,15 @@ export async function attachmentRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { transactionId, attachmentId } = req.params;
 
-      const attachment = await getAttachment(transactionId, attachmentId);
-      if (!attachment) {
-        return reply.status(404).send({ error: 'Attachment not found' });
+      try {
+        await deleteAttachment(transactionId, attachmentId);
+        return reply.status(204).send();
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('not found')) {
+          return reply.status(404).send({ error: err.message });
+        }
+        throw err;
       }
-
-      await storage.deleteFile(attachment.objectName);
-
-      await db
-        .delete(transactionAttachments)
-        .where(eq(transactionAttachments.id, attachmentId));
-
-      return reply.status(204).send();
     },
   );
 }

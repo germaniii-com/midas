@@ -5,7 +5,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
-import * as schema from '../src/db/schema';
+import * as schema from '@midas/core/schema';
 
 const dbDir = process.env.DATABASE_DIR || path.resolve(__dirname, '../sqlite_data');
 fs.mkdirSync(dbDir, { recursive: true });
@@ -628,18 +628,72 @@ async function main() {
   console.log('> Created 3 payment schedules');
 
   await db.insert(schema.paymentScheduleOccurrences).values([
-    { binderId: bId, scheduleId: rentSchedule.id, dueDate: '2026-04-02', transactionId: aprRent.id, paidAt: new Date().toISOString() },
-    { binderId: bId, scheduleId: rentSchedule.id, dueDate: '2026-05-02', transactionId: mayRent.id, paidAt: new Date().toISOString() },
-    { binderId: bId, scheduleId: rentSchedule.id, dueDate: '2026-06-02', transactionId: junRent.id, paidAt: new Date().toISOString() },
+    {
+      binderId: bId,
+      scheduleId: rentSchedule.id,
+      dueDate: '2026-04-02',
+      transactionId: aprRent.id,
+      paidAt: new Date().toISOString(),
+    },
+    {
+      binderId: bId,
+      scheduleId: rentSchedule.id,
+      dueDate: '2026-05-02',
+      transactionId: mayRent.id,
+      paidAt: new Date().toISOString(),
+    },
+    {
+      binderId: bId,
+      scheduleId: rentSchedule.id,
+      dueDate: '2026-06-02',
+      transactionId: junRent.id,
+      paidAt: new Date().toISOString(),
+    },
     { binderId: bId, scheduleId: rentSchedule.id, dueDate: '2026-07-02' },
     { binderId: bId, scheduleId: rentSchedule.id, dueDate: '2026-08-02' },
-    { binderId: bId, scheduleId: salarySchedule.id, dueDate: '2026-04-01', transactionId: aprSalary.id, paidAt: new Date().toISOString() },
-    { binderId: bId, scheduleId: salarySchedule.id, dueDate: '2026-05-01', transactionId: maySalary.id, paidAt: new Date().toISOString() },
-    { binderId: bId, scheduleId: salarySchedule.id, dueDate: '2026-06-01', transactionId: junSalary.id, paidAt: new Date().toISOString() },
+    {
+      binderId: bId,
+      scheduleId: salarySchedule.id,
+      dueDate: '2026-04-01',
+      transactionId: aprSalary.id,
+      paidAt: new Date().toISOString(),
+    },
+    {
+      binderId: bId,
+      scheduleId: salarySchedule.id,
+      dueDate: '2026-05-01',
+      transactionId: maySalary.id,
+      paidAt: new Date().toISOString(),
+    },
+    {
+      binderId: bId,
+      scheduleId: salarySchedule.id,
+      dueDate: '2026-06-01',
+      transactionId: junSalary.id,
+      paidAt: new Date().toISOString(),
+    },
     { binderId: bId, scheduleId: salarySchedule.id, dueDate: '2026-07-01' },
-    { binderId: bId, scheduleId: streamingSchedule.id, dueDate: '2026-04-18', transactionId: aprStreaming.id, paidAt: new Date().toISOString() },
-    { binderId: bId, scheduleId: streamingSchedule.id, dueDate: '2026-05-18', transactionId: mayStreaming.id, paidAt: new Date().toISOString() },
-    { binderId: bId, scheduleId: streamingSchedule.id, dueDate: '2026-06-18', transactionId: junStreaming.id, paidAt: new Date().toISOString() },
+    {
+      binderId: bId,
+      scheduleId: streamingSchedule.id,
+      dueDate: '2026-04-18',
+      transactionId: aprStreaming.id,
+      paidAt: new Date().toISOString(),
+    },
+    {
+      binderId: bId,
+      scheduleId: streamingSchedule.id,
+      dueDate: '2026-05-18',
+      transactionId: mayStreaming.id,
+      paidAt: new Date().toISOString(),
+    },
+    {
+      binderId: bId,
+      scheduleId: streamingSchedule.id,
+      dueDate: '2026-06-18',
+      transactionId: junStreaming.id,
+      paidAt: new Date().toISOString(),
+    },
     { binderId: bId, scheduleId: streamingSchedule.id, dueDate: '2026-07-18' },
   ]);
   console.log('> Created 13 payment schedule occurrences');

@@ -1,18 +1,29 @@
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { accounts, categories, accountCategories, transactions } from '../db/schema.js';
+import { accounts, categories, accountCategories } from '../db/schema.js';
 
 export interface Account {
   id: string;
   binderId: string;
   name: string;
   type: string;
-  createdAt: string;
+  createdAt: string | null;
 }
 
 export interface AccountWithBalance extends Account {
   balance: string;
   categories: { id: string; name: string }[];
+}
+
+export interface AccountCategorySum {
+  categoryId: string;
+  categoryName: string;
+  balance: string;
+}
+
+export interface AccountsListResult {
+  accounts: AccountWithBalance[];
+  categorySums: AccountCategorySum[];
 }
 
 export interface CreateAccountInput {
@@ -27,7 +38,7 @@ export interface UpdateAccountInput {
   categoryIds?: string[];
 }
 
-export async function listAccounts(binderId: string): Promise<AccountWithBalance[]> {
+export async function listAccounts(binderId: string): Promise<AccountsListResult> {
   const accountList = await db
     .select({
       id: accounts.id,
@@ -35,14 +46,13 @@ export async function listAccounts(binderId: string): Promise<AccountWithBalance
       name: accounts.name,
       type: accounts.type,
       createdAt: accounts.createdAt,
-      balance:
-        sql<string>`COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = accounts.id), 0)`,
+      balance: sql<string>`COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = accounts.id), 0)`,
     })
     .from(accounts)
     .where(eq(accounts.binderId, binderId))
     .orderBy(accounts.name);
 
-  if (accountList.length === 0) return [];
+  if (accountList.length === 0) return { accounts: [], categorySums: [] };
 
   const accountIds = accountList.map((a) => a.id);
   const categoryRows = await db
@@ -61,13 +71,31 @@ export async function listAccounts(binderId: string): Promise<AccountWithBalance
     categoriesByAccountId[cr.accountId].push({ id: cr.id, name: cr.name });
   }
 
-  return accountList.map((a) => ({
-    ...a,
-    categories: categoriesByAccountId[a.id] || [],
-  }));
+  const categorySums = await db
+    .select({
+      categoryId: accountCategories.categoryId,
+      categoryName: categories.name,
+      balance: sql<string>`COALESCE(SUM(COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = account_categories.account_id), 0)), 0)`,
+    })
+    .from(accountCategories)
+    .innerJoin(categories, eq(categories.id, accountCategories.categoryId))
+    .where(eq(accountCategories.binderId, binderId))
+    .groupBy(accountCategories.categoryId, categories.name)
+    .orderBy(categories.name);
+
+  return {
+    accounts: accountList.map((a) => ({
+      ...a,
+      categories: categoriesByAccountId[a.id] || [],
+    })),
+    categorySums,
+  };
 }
 
-export async function getAccount(binderId: string, accountId: string): Promise<AccountWithBalance | null> {
+export async function getAccount(
+  binderId: string,
+  accountId: string,
+): Promise<AccountWithBalance | null> {
   const [account] = await db
     .select({
       id: accounts.id,
@@ -75,16 +103,10 @@ export async function getAccount(binderId: string, accountId: string): Promise<A
       name: accounts.name,
       type: accounts.type,
       createdAt: accounts.createdAt,
-      balance:
-        sql<string>`COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = accounts.id), 0)`,
+      balance: sql<string>`COALESCE((SELECT SUM(amount) FROM transactions WHERE transactions.account_id = accounts.id), 0)`,
     })
     .from(accounts)
-    .where(
-      and(
-        eq(accounts.id, accountId),
-        eq(accounts.binderId, binderId),
-      ),
-    );
+    .where(and(eq(accounts.id, accountId), eq(accounts.binderId, binderId)));
 
   if (!account) return null;
 
@@ -97,7 +119,10 @@ export async function getAccount(binderId: string, accountId: string): Promise<A
   return { ...account, categories: categoryList };
 }
 
-export async function createAccount(binderId: string, input: CreateAccountInput): Promise<AccountWithBalance> {
+export async function createAccount(
+  binderId: string,
+  input: CreateAccountInput,
+): Promise<AccountWithBalance> {
   const { name, type, categoryIds } = input;
 
   if (!name?.trim()) throw new Error('Name is required');
@@ -107,10 +132,7 @@ export async function createAccount(binderId: string, input: CreateAccountInput)
     .select({ id: accounts.id })
     .from(accounts)
     .where(
-      and(
-        eq(accounts.binderId, binderId),
-        sql`LOWER(${accounts.name}) = LOWER(${name.trim()})`,
-      ),
+      and(eq(accounts.binderId, binderId), sql`LOWER(${accounts.name}) = LOWER(${name.trim()})`),
     )
     .limit(1);
 
@@ -137,12 +159,13 @@ export async function createAccount(binderId: string, input: CreateAccountInput)
     );
   }
 
-  const categoryList = categoryIds && categoryIds.length > 0
-    ? await db
-        .select({ id: categories.id, name: categories.name })
-        .from(categories)
-        .where(inArray(categories.id, categoryIds))
-    : [];
+  const categoryList =
+    categoryIds && categoryIds.length > 0
+      ? await db
+          .select({ id: categories.id, name: categories.name })
+          .from(categories)
+          .where(inArray(categories.id, categoryIds))
+      : [];
 
   return {
     ...account,
@@ -151,7 +174,11 @@ export async function createAccount(binderId: string, input: CreateAccountInput)
   };
 }
 
-export async function updateAccount(binderId: string, accountId: string, input: UpdateAccountInput): Promise<AccountWithBalance> {
+export async function updateAccount(
+  binderId: string,
+  accountId: string,
+  input: UpdateAccountInput,
+): Promise<AccountWithBalance> {
   const { name, type, categoryIds } = input;
 
   if (name !== undefined && !name.trim()) {
@@ -191,9 +218,7 @@ export async function updateAccount(binderId: string, accountId: string, input: 
   }
 
   if (categoryIds !== undefined) {
-    await db
-      .delete(accountCategories)
-      .where(eq(accountCategories.accountId, accountId));
+    await db.delete(accountCategories).where(eq(accountCategories.accountId, accountId));
 
     if (categoryIds.length > 0) {
       await db.insert(accountCategories).values(
@@ -206,12 +231,13 @@ export async function updateAccount(binderId: string, accountId: string, input: 
     }
   }
 
-  const categoryList = categoryIds && categoryIds.length > 0
-    ? await db
-        .select({ id: categories.id, name: categories.name })
-        .from(categories)
-        .where(inArray(categories.id, categoryIds))
-    : [];
+  const categoryList =
+    categoryIds && categoryIds.length > 0
+      ? await db
+          .select({ id: categories.id, name: categories.name })
+          .from(categories)
+          .where(inArray(categories.id, categoryIds))
+      : [];
 
   const [balanceRow] = await db
     .select({
@@ -230,12 +256,7 @@ export async function updateAccount(binderId: string, accountId: string, input: 
 export async function deleteAccount(binderId: string, accountId: string): Promise<void> {
   const [account] = await db
     .delete(accounts)
-    .where(
-      and(
-        eq(accounts.id, accountId),
-        eq(accounts.binderId, binderId),
-      ),
-    )
+    .where(and(eq(accounts.id, accountId), eq(accounts.binderId, binderId)))
     .returning({ id: accounts.id });
 
   if (!account) {

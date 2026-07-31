@@ -13,23 +13,28 @@ echo ">>> Installing dependencies..."
 cd "$ROOT_DIR"
 npm ci
 
-# 2. Build backend
+# 2. Build core
+echo ""
+echo ">>> Building core..."
+npm run build:core
+
+# 3. Build backend
 echo ""
 echo ">>> Building backend..."
 npm run build --workspace=backend
 
-# 3. Build frontend
+# 4. Build frontend
 echo ""
 echo ">>> Building frontend..."
 npm run build --workspace=frontend
 
-# 4. Clean previous release artifacts
+# 5. Clean previous release artifacts
 echo ""
 echo ">>> Cleaning previous release..."
 rm -rf "$RELEASE_DIR"
 rm -rf "$ROOT_DIR/desktop/release-backend-deps"
 
-# 5. Package for current platform
+# 6. Package for current platform
 echo ""
 echo ">>> Packaging desktop app..."
 

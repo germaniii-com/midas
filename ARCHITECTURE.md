@@ -489,27 +489,23 @@ The schema is defined in `@midas/core/src/db/schema.ts` and includes:
 
 ---
 
-## Migration Plan
+## Migration Status
 
-1. **Create `@midas/core` package**
-   - Move `backend/src/db/` to `core/src/db/`
-   - Move `backend/src/recurrence.ts` to `core/src/recurrence.ts`
-   - Create `core/src/services/` with extracted business logic
+### Done
+- `@midas/core` package created as a CommonJS workspace package (consumable by the CJS backend).
+- Database schema, connection (`db`/`sqliteDb`), storage abstraction, and recurrence logic moved to core.
+- All business logic extracted from `backend/src/routes/` into `core/src/services/`:
+  - `binders`, `accounts`, `transactions`, `categories`, `payees`, `tags`
+  - `payment-schedules`, `reports`, `attachments`, `sync` (incl. the sync engine `performSync`), `binder-io`, `actual-import`, `remote`
+- `backend` routes are now thin HTTP adapters that import from `@midas/core` and map errors to HTTP status codes.
+- `backend/src/db`, `backend/src/storage`, `backend/src/recurrence.ts`, and `backend/src/services/sync-engine.ts` were deleted (moved to core).
+- `drizzle.config.ts` points at `core/src/db/schema.ts`; `scripts/seed.ts` imports schema from `@midas/core/schema`.
+- Root scripts build core before backend (packaging/release pipelines included).
 
-2. **Extract services from routes**
-   - For each route file, extract database operations into service functions
-   - Keep HTTP-specific logic (request parsing, response formatting) in API routes
-   - Services should accept typed inputs and return typed outputs
-
-3. **Update `@midas/api`**
-   - Import services from `@midas/core`
-   - Routes become thin HTTP adapters
-
-4. **Update `@midas/react`**
-   - Can optionally use `@midas/core` directly for offline/desktop modes
-
-5. **Update `@midas/desktop`**
-   - Can use `@midas/core` directly for local-first architecture
+### Not done (future work)
+- `@midas/react` (frontend) still talks to the API over HTTP; it does not import `@midas/core` yet.
+- `@midas/desktop` still bundles the built backend + its deps; it does not call `@midas/core` directly yet. The desktop `copy-backend-deps.js` copies `@midas/core` from the workspace (including `dist`), which works but copies the source tree too.
+- Backend build: `npm run build --workspace=backend` requires `@midas/core` to be built first (`npm run build:core`). Dev: `npm run dev` runs `tsc --watch` for core so changes rebuild automatically (tsx may need a restart to pick up core changes).
 
 ---
 
@@ -522,8 +518,8 @@ The schema is defined in `@midas/core/src/db/schema.ts` and includes:
 import { listAccounts, createAccount } from '@midas/core';
 
 app.get('/binders/:id/accounts', async (req, reply) => {
-  const accounts = await listAccounts(req.params.id);
-  return reply.send({ accounts });
+  const { accounts, categorySums } = await listAccounts(req.params.id);
+  return reply.send({ accounts, categorySums });
 });
 ```
 
@@ -533,6 +529,6 @@ app.get('/binders/:id/accounts', async (req, reply) => {
 // @midas/desktop or any client
 import { listAccounts, createAccount } from '@midas/core';
 
-const accounts = await listAccounts(binderId);
+const { accounts } = await listAccounts(binderId);
 const newAccount = await createAccount(binderId, { name: 'Checking', type: 'checking' });
 ```

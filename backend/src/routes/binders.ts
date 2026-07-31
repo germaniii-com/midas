@@ -1,8 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import bcrypt from 'bcrypt';
-import { eq, and, sql } from 'drizzle-orm';
-import { db } from '../db';
-import { budgetBinders } from '../db/schema';
+import { createBinder, getBinder, listBinders, loginBinder, updateBinder } from '@midas/core';
 
 interface CreateBinderBody {
   name: string;
@@ -18,60 +15,25 @@ interface LoginBody {
 
 export async function binderRoutes(app: FastifyInstance) {
   app.get('/binders', async (_req, reply) => {
-    const binders = await db
-      .select({
-        id: budgetBinders.id,
-        name: budgetBinders.name,
-        description: budgetBinders.description,
-        currency: budgetBinders.currency,
-      })
-      .from(budgetBinders)
-      .orderBy(budgetBinders.createdAt);
+    const binders = await listBinders();
     return reply.send(binders);
   });
 
   app.post<{ Body: CreateBinderBody }>('/binders', async (req, reply) => {
     const { name, password, description, currency } = req.body;
-
-    const [existing] = await db
-      .select({ id: budgetBinders.id })
-      .from(budgetBinders)
-      .where(sql`LOWER(${budgetBinders.name}) = LOWER(${name.trim()})`)
-      .limit(1);
-    if (existing) {
-      return reply
-        .status(409)
-        .send({ error: 'A binder with this name already exists' });
+    try {
+      const binder = await createBinder({ name, password, description, currency });
+      return reply.status(201).send(binder);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('already exists')) {
+        return reply.status(409).send({ error: err.message });
+      }
+      throw err;
     }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const [binder] = await db
-      .insert(budgetBinders)
-      .values({
-        name: name.trim(),
-        passwordHash,
-        description: description ?? null,
-        currency: currency ?? 'USD',
-      })
-      .returning({
-        id: budgetBinders.id,
-        name: budgetBinders.name,
-        description: budgetBinders.description,
-        currency: budgetBinders.currency,
-      });
-    return reply.status(201).send(binder);
   });
 
   app.get<{ Params: { id: string } }>('/binders/:id', async (req, reply) => {
-    const [binder] = await db
-      .select({
-        id: budgetBinders.id,
-        name: budgetBinders.name,
-        description: budgetBinders.description,
-        currency: budgetBinders.currency,
-      })
-      .from(budgetBinders)
-      .where(eq(budgetBinders.id, req.params.id));
+    const binder = await getBinder(req.params.id);
     if (!binder) {
       return reply.status(404).send({ error: 'Binder not found' });
     }
@@ -82,66 +44,31 @@ export async function binderRoutes(app: FastifyInstance) {
     '/binders/:id',
     async (req, reply) => {
       const { name, currency } = req.body;
-      const updates: Partial<typeof budgetBinders.$inferInsert> = {};
-
-      if (name !== undefined) {
-        if (!name.trim()) {
-          return reply.status(400).send({ error: 'Name cannot be empty' });
-        }
-        const [existing] = await db
-          .select({ id: budgetBinders.id })
-          .from(budgetBinders)
-          .where(
-            and(
-              sql`LOWER(${budgetBinders.name}) = LOWER(${name.trim()})`,
-              sql`${budgetBinders.id} != ${req.params.id}`,
-            ),
-          )
-          .limit(1);
-        if (existing) {
-          return reply
-            .status(409)
-            .send({ error: 'A binder with this name already exists' });
-        }
-        updates.name = name.trim();
+      try {
+        const binder = await updateBinder(req.params.id, { name, currency });
+        return reply.send(binder);
+      } catch (err) {
+        if (!(err instanceof Error)) throw err;
+        if (err.message.includes('already exists'))
+          return reply.status(409).send({ error: err.message });
+        if (err.message.includes('empty')) return reply.status(400).send({ error: err.message });
+        if (err.message.includes('not found'))
+          return reply.status(404).send({ error: err.message });
+        throw err;
       }
-
-      if (currency !== undefined) {
-        updates.currency = currency;
-      }
-
-      const [binder] = await db
-        .update(budgetBinders)
-        .set(updates)
-        .where(eq(budgetBinders.id, req.params.id))
-        .returning({
-          id: budgetBinders.id,
-          name: budgetBinders.name,
-          description: budgetBinders.description,
-          currency: budgetBinders.currency,
-        });
-
-      if (!binder) {
-        return reply.status(404).send({ error: 'Binder not found' });
-      }
-
-      return reply.send(binder);
     },
   );
 
   app.post<{ Body: LoginBody }>('/binders/login', async (req, reply) => {
     const { name, password } = req.body;
-    const [binder] = await db
-      .select()
-      .from(budgetBinders)
-      .where(eq(budgetBinders.name, name));
-    if (!binder) {
-      return reply.status(401).send({ error: 'Invalid name or password' });
+    try {
+      const session = await loginBinder(name, password);
+      return reply.send(session);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('Invalid')) {
+        return reply.status(401).send({ error: err.message });
+      }
+      throw err;
     }
-    const valid = await bcrypt.compare(password, binder.passwordHash);
-    if (!valid) {
-      return reply.status(401).send({ error: 'Invalid name or password' });
-    }
-    return reply.send({ id: binder.id, name: binder.name });
   });
 }

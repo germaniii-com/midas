@@ -12,14 +12,14 @@ function fmt(val: unknown): string {
   return `'${String(val)}'`;
 }
 
-export interface Binder {
+export interface RemoteBinder {
   id: string;
   name: string;
   description: string | null;
   currency: string;
 }
 
-export async function listRemoteBinders(host: string, password: string): Promise<Binder[]> {
+export async function listRemoteBinders(host: string, password: string): Promise<RemoteBinder[]> {
   const normalizedHost = host.replace(/\/+$/, '');
   const res = await fetch(`${normalizedHost}/api/sync/binders`, {
     headers: { 'x-sync-password': password },
@@ -29,10 +29,16 @@ export async function listRemoteBinders(host: string, password: string): Promise
   if (res.status === 401) throw new Error('Invalid server password');
   if (!res.ok) throw new Error('Remote server returned an error');
 
-  return res.json();
+  return (await res.json()) as RemoteBinder[];
 }
 
-export async function pullRemoteBinder(host: string, serverPassword: string, binderId: string, binderName: string, password: string): Promise<Binder> {
+export async function pullRemoteBinder(
+  host: string,
+  serverPassword: string,
+  binderId: string,
+  binderName: string,
+  password: string,
+): Promise<RemoteBinder> {
   const normalizedHost = host.replace(/\/+$/, '');
 
   const loginRes = await fetch(`${normalizedHost}/api/binders/login`, {
@@ -44,17 +50,23 @@ export async function pullRemoteBinder(host: string, serverPassword: string, bin
 
   if (!loginRes.ok) throw new Error('Invalid binder password');
 
-  const loginResult = await loginRes.json();
+  const loginResult = (await loginRes.json()) as { id: string };
   if (loginResult.id !== binderId) throw new Error('Binder mismatch on remote server');
 
-  const exportRes = await fetch(`${normalizedHost}/api/binders/${binderId}/export`, { signal: AbortSignal.timeout(30000) });
+  const exportRes = await fetch(`${normalizedHost}/api/binders/${binderId}/export`, {
+    signal: AbortSignal.timeout(30000),
+  });
   if (!exportRes.ok) throw new Error('Failed to fetch binder export from remote');
 
   const exportSql = await exportRes.text();
   return importBinderPreservingUuids(exportSql, password, binderName);
 }
 
-async function importBinderPreservingUuids(sqlContent: string, password: string, expectedName: string): Promise<Binder> {
+async function importBinderPreservingUuids(
+  sqlContent: string,
+  password: string,
+  expectedName: string,
+): Promise<RemoteBinder> {
   const headerName = sqlContent.match(/^-- Binder: (.+)$/m)?.[1]?.trim();
   const headerDescription = sqlContent.match(/^-- Description: (.+)$/m)?.[1]?.trim();
   const headerCurrency = sqlContent.match(/^-- Currency: (.+)$/m)?.[1]?.trim();
@@ -63,13 +75,23 @@ async function importBinderPreservingUuids(sqlContent: string, password: string,
   const newDescription = headerDescription || null;
   const newCurrency = headerCurrency || 'USD';
 
-  const originalBinderId = sqlContent.match(/binder_id[\s\S]*?VALUES\s*\([^)]*,\s*'([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'/i)?.[1];
+  const originalBinderId = sqlContent.match(
+    /binder_id[\s\S]*?VALUES\s*\([^)]*,\s*'([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'/i,
+  )?.[1];
   if (!originalBinderId) throw new Error('Could not determine binder ID from export');
 
-  const [existingById] = await db.select({ id: budgetBinders.id }).from(budgetBinders).where(eq(budgetBinders.id, originalBinderId)).limit(1);
+  const [existingById] = await db
+    .select({ id: budgetBinders.id })
+    .from(budgetBinders)
+    .where(eq(budgetBinders.id, originalBinderId))
+    .limit(1);
   if (existingById) throw new Error('This binder already exists locally');
 
-  const [existingByName] = await db.select({ id: budgetBinders.id }).from(budgetBinders).where(sql`LOWER(${budgetBinders.name}) = LOWER(${finalName})`).limit(1);
+  const [existingByName] = await db
+    .select({ id: budgetBinders.id })
+    .from(budgetBinders)
+    .where(sql`LOWER(${budgetBinders.name}) = LOWER(${finalName})`)
+    .limit(1);
   const displayName = existingByName ? `${finalName} (Imported)` : finalName;
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -91,5 +113,10 @@ async function importBinderPreservingUuids(sqlContent: string, password: string,
 
   sqliteDb.exec(fullSql);
 
-  return { id: originalBinderId, name: displayName, description: newDescription, currency: newCurrency };
+  return {
+    id: originalBinderId,
+    name: displayName,
+    description: newDescription,
+    currency: newCurrency,
+  };
 }

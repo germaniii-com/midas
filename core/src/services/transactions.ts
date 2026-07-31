@@ -1,7 +1,15 @@
 import { eq, and, sql, inArray, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '../db/index.js';
-import { transactions, accounts, payees, tags, transactionTags, accountCategories, transactionAttachments } from '../db/schema.js';
+import {
+  transactions,
+  accounts,
+  payees,
+  tags,
+  transactionTags,
+  accountCategories,
+  transactionAttachments,
+} from '../db/schema.js';
 import { storage } from '../storage/index.js';
 
 export interface Transaction {
@@ -13,8 +21,8 @@ export interface Transaction {
   amount: string;
   date: string;
   notes: string | null;
-  isCleared: boolean;
-  createdAt: string;
+  isCleared: boolean | null;
+  createdAt: string | null;
 }
 
 export interface TransactionWithDetails extends Transaction {
@@ -24,7 +32,13 @@ export interface TransactionWithDetails extends Transaction {
   transferAccountName: string | null;
   tags: { id: string; name: string; color: string | null }[];
   attachmentCount?: number;
-  attachments?: { id: string; fileName: string; mimeType: string; fileSize: number; createdAt: string }[];
+  attachments?: {
+    id: string;
+    fileName: string;
+    mimeType: string | null;
+    fileSize: number | null;
+    createdAt: string | null;
+  }[];
 }
 
 export interface CreateTransactionInput {
@@ -60,7 +74,10 @@ function flipAmount(amount: string): string {
   return amount.startsWith('-') ? amount.slice(1) : `-${amount}`;
 }
 
-export async function listTransactions(binderId: string, filters: ListTransactionsFilters = {}): Promise<{ transactions: TransactionWithDetails[]; totalAmount: string }> {
+export async function listTransactions(
+  binderId: string,
+  filters: ListTransactionsFilters = {},
+): Promise<{ transactions: TransactionWithDetails[]; totalAmount: string }> {
   const { accountId, categoryId, limit: limitParam = 50, offset: offsetParam = 0 } = filters;
   const limit = Math.min(Math.max(limitParam, 1), 500);
   const offset = Math.max(offsetParam, 0);
@@ -73,7 +90,12 @@ export async function listTransactions(binderId: string, filters: ListTransactio
       .from(accountCategories)
       .where(eq(accountCategories.categoryId, categoryId));
     if (catAccountRows.length === 0) return { transactions: [], totalAmount: '0' };
-    whereConditions.push(inArray(transactions.accountId, catAccountRows.map((r) => r.accountId)));
+    whereConditions.push(
+      inArray(
+        transactions.accountId,
+        catAccountRows.map((r) => r.accountId),
+      ),
+    );
   }
 
   const counterpartTx = alias(transactions, 'counterpart_tx');
@@ -159,7 +181,10 @@ export async function listTransactions(binderId: string, filters: ListTransactio
   return { transactions: transactions_result, totalAmount };
 }
 
-export async function getTransaction(binderId: string, transactionId: string): Promise<TransactionWithDetails | null> {
+export async function getTransaction(
+  binderId: string,
+  transactionId: string,
+): Promise<TransactionWithDetails | null> {
   const counterpartTx = alias(transactions, 'counterpart_tx');
   const transferAccount = alias(accounts, 'transfer_account');
 
@@ -210,7 +235,10 @@ export async function getTransaction(binderId: string, transactionId: string): P
   return { ...tx, tags: tagList, attachments: attachmentList };
 }
 
-export async function createTransaction(binderId: string, input: CreateTransactionInput): Promise<TransactionWithDetails> {
+export async function createTransaction(
+  binderId: string,
+  input: CreateTransactionInput,
+): Promise<TransactionWithDetails> {
   const { accountId, amount, date, payeeId, transferAccountId, notes, isCleared, tagIds } = input;
 
   if (!accountId) throw new Error('Account is required');
@@ -264,12 +292,13 @@ export async function createTransaction(binderId: string, input: CreateTransacti
     );
   }
 
-  const tagList = tagIds && tagIds.length > 0
-    ? await db
-        .select({ id: tags.id, name: tags.name, color: tags.color })
-        .from(tags)
-        .where(inArray(tags.id, tagIds))
-    : [];
+  const tagList =
+    tagIds && tagIds.length > 0
+      ? await db
+          .select({ id: tags.id, name: tags.name, color: tags.color })
+          .from(tags)
+          .where(inArray(tags.id, tagIds))
+      : [];
 
   const [account] = await db
     .select({ name: accounts.name })
@@ -290,7 +319,11 @@ export async function createTransaction(binderId: string, input: CreateTransacti
   };
 }
 
-export async function updateTransaction(binderId: string, transactionId: string, input: UpdateTransactionInput): Promise<TransactionWithDetails> {
+export async function updateTransaction(
+  binderId: string,
+  transactionId: string,
+  input: UpdateTransactionInput,
+): Promise<TransactionWithDetails> {
   const { accountId, amount, date, payeeId, transferAccountId, notes, isCleared, tagIds } = input;
 
   const [oldTx] = await db
@@ -399,13 +432,6 @@ export async function updateTransaction(binderId: string, transactionId: string,
     }
   }
 
-  const tagList = tagIds && tagIds.length > 0
-    ? await db
-        .select({ id: tags.id, name: tags.name, color: tags.color })
-        .from(tags)
-        .where(inArray(tags.id, tagIds))
-    : [];
-
   return getTransaction(binderId, transactionId) as Promise<TransactionWithDetails>;
 }
 
@@ -433,6 +459,8 @@ export async function deleteTransaction(binderId: string, transactionId: string)
   }
 
   await db.delete(transactionTags).where(inArray(transactionTags.transactionId, txIdsToDelete));
-  await db.delete(transactionAttachments).where(inArray(transactionAttachments.transactionId, txIdsToDelete));
+  await db
+    .delete(transactionAttachments)
+    .where(inArray(transactionAttachments.transactionId, txIdsToDelete));
   await db.delete(transactions).where(inArray(transactions.id, txIdsToDelete));
 }

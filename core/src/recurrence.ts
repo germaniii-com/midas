@@ -3,11 +3,9 @@ import {
   addWeeks,
   addMonths,
   addYears,
-  startOfMonth,
   endOfMonth,
   getDay,
   isBefore,
-  isEqual,
   parseISO,
   format,
 } from 'date-fns';
@@ -56,10 +54,21 @@ function getSpecificDatesInMonth(year: number, month: number, specificDays: stri
   return dates;
 }
 
-function getSpecificDatesInWeek(year: number, month: number, dayOfMonth: number, specificDays: string[]): Date[] {
+function getSpecificDatesInWeek(
+  year: number,
+  month: number,
+  dayOfMonth: number,
+  specificDays: string[],
+): Date[] {
   const weekdays: number[] = [];
   const weekdayMap: Record<string, number> = {
-    'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6,
+    SUN: 0,
+    MON: 1,
+    TUE: 2,
+    WED: 3,
+    THU: 4,
+    FRI: 5,
+    SAT: 6,
   };
   for (const d of specificDays) {
     const upper = d.toUpperCase();
@@ -109,13 +118,28 @@ export function computeNextOccurrences(
         if (paidSet.has(dateStr)) continue;
 
         occurrenceCount++;
-        if (rule.endType === 'after' && rule.endOccurrences !== null && occurrenceCount > rule.endOccurrences) break;
+        if (
+          rule.endType === 'after' &&
+          rule.endOccurrences !== null &&
+          occurrenceCount > rule.endOccurrences
+        )
+          break;
 
         results.push({ dueDate: dateStr, occurrenceIndex: occurrenceCount });
       }
 
-      if (rule.endType === 'after' && rule.endOccurrences !== null && occurrenceCount >= rule.endOccurrences) break;
-      if (rule.endType === 'date' && rule.endDate && isBefore(currentDate, parseISO(rule.endDate)) === false) break;
+      if (
+        rule.endType === 'after' &&
+        rule.endOccurrences !== null &&
+        occurrenceCount >= rule.endOccurrences
+      )
+        break;
+      if (
+        rule.endType === 'date' &&
+        rule.endDate &&
+        isBefore(currentDate, parseISO(rule.endDate)) === false
+      )
+        break;
 
       if (rule.repeatInterval > 0) {
         currentDate = addMonths(currentDate, rule.repeatInterval);
@@ -141,12 +165,27 @@ export function computeNextOccurrences(
         if (paidSet.has(dateStr)) continue;
 
         occurrenceCount++;
-        if (rule.endType === 'after' && rule.endOccurrences !== null && occurrenceCount > rule.endOccurrences) break;
+        if (
+          rule.endType === 'after' &&
+          rule.endOccurrences !== null &&
+          occurrenceCount > rule.endOccurrences
+        )
+          break;
         results.push({ dueDate: dateStr, occurrenceIndex: occurrenceCount });
       }
 
-      if (rule.endType === 'after' && rule.endOccurrences !== null && occurrenceCount >= rule.endOccurrences) break;
-      if (rule.endType === 'date' && rule.endDate && isBefore(currentDate, parseISO(rule.endDate)) === false) break;
+      if (
+        rule.endType === 'after' &&
+        rule.endOccurrences !== null &&
+        occurrenceCount >= rule.endOccurrences
+      )
+        break;
+      if (
+        rule.endType === 'date' &&
+        rule.endDate &&
+        isBefore(currentDate, parseISO(rule.endDate)) === false
+      )
+        break;
 
       if (rule.repeatInterval > 0) {
         currentDate = addWeeks(currentDate, rule.repeatInterval);
@@ -160,7 +199,12 @@ export function computeNextOccurrences(
       maxIterations--;
       if (!options?.includePast && isBefore(currentDate, today)) {
         currentDate = advanceDate(currentDate, rule);
-        if (rule.endType === 'date' && rule.endDate && isBefore(currentDate, parseISO(rule.endDate)) === false) break;
+        if (
+          rule.endType === 'date' &&
+          rule.endDate &&
+          isBefore(currentDate, parseISO(rule.endDate)) === false
+        )
+          break;
         continue;
       }
 
@@ -169,15 +213,30 @@ export function computeNextOccurrences(
 
       if (!paidSet.has(dateStr)) {
         occurrenceCount++;
-        if (rule.endType === 'after' && rule.endOccurrences !== null && occurrenceCount > rule.endOccurrences) break;
+        if (
+          rule.endType === 'after' &&
+          rule.endOccurrences !== null &&
+          occurrenceCount > rule.endOccurrences
+        )
+          break;
         results.push({ dueDate: dateStr, occurrenceIndex: occurrenceCount });
       }
 
-      if (rule.endType === 'after' && rule.endOccurrences !== null && occurrenceCount >= rule.endOccurrences) break;
+      if (
+        rule.endType === 'after' &&
+        rule.endOccurrences !== null &&
+        occurrenceCount >= rule.endOccurrences
+      )
+        break;
 
       currentDate = advanceDate(currentDate, rule);
 
-      if (rule.endType === 'date' && rule.endDate && isBefore(currentDate, parseISO(rule.endDate)) === false) break;
+      if (
+        rule.endType === 'date' &&
+        rule.endDate &&
+        isBefore(currentDate, parseISO(rule.endDate)) === false
+      )
+        break;
     }
   }
 

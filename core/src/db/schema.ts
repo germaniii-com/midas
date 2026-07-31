@@ -9,7 +9,9 @@ import {
 } from 'drizzle-orm/sqlite-core';
 
 export const budgetBinders = sqliteTable('budget_binders', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull().unique(),
   description: text('description'),
   currency: text('currency').default('USD'),
@@ -19,16 +21,24 @@ export const budgetBinders = sqliteTable('budget_binders', {
 });
 
 export const payees = sqliteTable('payees', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 export const tags = sqliteTable('tags', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   color: text('color').default('#3B82F6'),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
@@ -36,8 +46,12 @@ export const tags = sqliteTable('tags', {
 });
 
 export const accounts = sqliteTable('accounts', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   type: text('type').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
@@ -47,9 +61,15 @@ export const accounts = sqliteTable('accounts', {
 export const accountTags = sqliteTable(
   'account_tags',
   {
-    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
-    tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+    binderId: text('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.accountId, table.tagId] }),
@@ -57,8 +77,12 @@ export const accountTags = sqliteTable(
 );
 
 export const categories = sqliteTable('categories', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
@@ -67,9 +91,15 @@ export const categories = sqliteTable('categories', {
 export const accountCategories = sqliteTable(
   'account_categories',
   {
-    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
-    categoryId: text('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
+    binderId: text('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.accountId, table.categoryId] }),
@@ -79,9 +109,15 @@ export const accountCategories = sqliteTable(
 export const transactions = sqliteTable(
   'transactions',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    binderId: text('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
     payeeId: text('payee_id').references(() => payees.id, { onDelete: 'set null' }),
     transferId: text('transfer_id'),
     amount: text('amount').notNull(),
@@ -102,9 +138,15 @@ export const transactions = sqliteTable(
 export const transactionTags = sqliteTable(
   'transaction_tags',
   {
-    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    transactionId: text('transaction_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
-    tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+    binderId: text('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    transactionId: text('transaction_id')
+      .notNull()
+      .references(() => transactions.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.transactionId, table.tagId] }),
@@ -112,12 +154,20 @@ export const transactionTags = sqliteTable(
 );
 
 export const paymentSchedules = sqliteTable('payment_schedules', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  accountId: text('account_id')
+    .notNull()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
   payeeId: text('payee_id').references(() => payees.id, { onDelete: 'set null' }),
-  transferAccountId: text('transfer_account_id').references(() => accounts.id, { onDelete: 'set null' }),
+  transferAccountId: text('transfer_account_id').references(() => accounts.id, {
+    onDelete: 'set null',
+  }),
   amount: text('amount').notNull(),
   repeatInterval: integer('repeat_interval').notNull().default(1),
   repeatType: text('repeat_type').notNull(),
@@ -137,11 +187,19 @@ export const paymentSchedules = sqliteTable('payment_schedules', {
 export const paymentScheduleOccurrences = sqliteTable(
   'payment_schedule_occurrences',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-    binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-    scheduleId: text('schedule_id').notNull().references(() => paymentSchedules.id, { onDelete: 'cascade' }),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    binderId: text('binder_id')
+      .notNull()
+      .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+    scheduleId: text('schedule_id')
+      .notNull()
+      .references(() => paymentSchedules.id, { onDelete: 'cascade' }),
     dueDate: text('due_date').notNull(),
-    transactionId: text('transaction_id').references(() => transactions.id, { onDelete: 'set null' }),
+    transactionId: text('transaction_id').references(() => transactions.id, {
+      onDelete: 'set null',
+    }),
     paidAt: text('paid_at'),
     createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
@@ -152,9 +210,15 @@ export const paymentScheduleOccurrences = sqliteTable(
 );
 
 export const transactionAttachments = sqliteTable('transaction_attachments', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  transactionId: text('transaction_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  transactionId: text('transaction_id')
+    .notNull()
+    .references(() => transactions.id, { onDelete: 'cascade' }),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   fileName: text('file_name').notNull(),
   objectName: text('object_name').notNull(),
   mimeType: text('mime_type'),
@@ -164,9 +228,15 @@ export const transactionAttachments = sqliteTable('transaction_attachments', {
 });
 
 export const investments = sqliteTable('investments', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  accountId: text('account_id')
+    .notNull()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
   principalAmount: text('principal_amount').notNull().default('0.00'),
   interestRate: text('interest_rate').notNull(),
   interestPeriod: text('interest_period').notNull(),
@@ -179,8 +249,12 @@ export const investments = sqliteTable('investments', {
 });
 
 export const syncTargets = sqliteTable('sync_targets', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
   host: text('host').notNull(),
   password: text('password').notNull(),
   autoSyncInterval: integer('auto_sync_interval'),
@@ -191,9 +265,15 @@ export const syncTargets = sqliteTable('sync_targets', {
 });
 
 export const syncJobs = sqliteTable('sync_jobs', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  binderId: text('binder_id').notNull().references(() => budgetBinders.id, { onDelete: 'cascade' }),
-  targetId: text('target_id').notNull().references(() => syncTargets.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  binderId: text('binder_id')
+    .notNull()
+    .references(() => budgetBinders.id, { onDelete: 'cascade' }),
+  targetId: text('target_id')
+    .notNull()
+    .references(() => syncTargets.id, { onDelete: 'cascade' }),
   status: text('status').notNull().default('pending'),
   phase: text('phase').notNull().default('push'),
   currentTable: text('current_table'),

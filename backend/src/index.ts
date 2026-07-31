@@ -16,8 +16,7 @@ import { attachmentRoutes } from './routes/attachments';
 import { syncRoutes } from './routes/sync';
 import { remoteRoutes } from './routes/remote';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { db } from './db';
-import { storage } from './storage';
+import { db, storage } from '@midas/core';
 import { SyncScheduler } from './services/sync-scheduler';
 
 const app = Fastify({ logger: true });
@@ -41,7 +40,7 @@ async function routes(app: FastifyInstance) {
     }
   });
 
-  app.get('/health', async (_req, _reply) => {
+  app.get('/health', async () => {
     return { status: 'ok' };
   });
   app.register(binderRoutes);
@@ -67,9 +66,11 @@ const start = async () => {
     await storage.init();
 
     SyncScheduler.init();
-    SyncScheduler.getInstance().loadAll().catch((err) => {
-      console.error('Failed to load auto-sync jobs:', err);
-    });
+    SyncScheduler.getInstance()
+      .loadAll()
+      .catch((err) => {
+        console.error('Failed to load auto-sync jobs:', err);
+      });
 
     await app.listen({ port: Number(process.env.PORT) || 3000, host: '0.0.0.0' });
   } catch (err) {

@@ -7,7 +7,7 @@ export interface Binder {
   id: string;
   name: string;
   description: string | null;
-  currency: string;
+  currency: string | null;
 }
 
 export interface CreateBinderInput {
@@ -124,11 +124,11 @@ export async function updateBinder(id: string, input: UpdateBinderInput): Promis
   return binder;
 }
 
-export async function loginBinder(name: string, password: string): Promise<{ id: string; name: string }> {
-  const [binder] = await db
-    .select()
-    .from(budgetBinders)
-    .where(eq(budgetBinders.name, name));
+export async function loginBinder(
+  name: string,
+  password: string,
+): Promise<{ id: string; name: string }> {
+  const [binder] = await db.select().from(budgetBinders).where(eq(budgetBinders.name, name));
 
   if (!binder) {
     throw new Error('Invalid name or password');

@@ -2,25 +2,24 @@
   "name": "@midas/core",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./db": {
       "types": "./dist/db/index.d.ts",
-      "import": "./dist/db/index.js"
+      "default": "./dist/db/index.js"
     },
     "./schema": {
       "types": "./dist/db/schema.d.ts",
-      "import": "./dist/db/schema.js"
+      "default": "./dist/db/schema.js"
     },
     "./services/*": {
       "types": "./dist/services/*.d.ts",
-      "import": "./dist/services/*.js"
+      "default": "./dist/services/*.js"
     }
   },
   "scripts": {
@@ -29,19 +28,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "better-sqlite3": "^11.9.1",
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^12.11.1",
     "date-fns": "^4.4.0",
-    "drizzle-orm": "^0.44.0",
-    "minio": "^8.0.5",
-    "sharp": "^0.34.2",
-    "sql.js": "^1.13.0"
+    "drizzle-orm": "^0.45.2",
+    "minio": "^8.0.7",
+    "sharp": "^0.34.5",
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/sql.js": "^1.4.9",
-    "drizzle-kit": "^0.31.1",
-    "typescript": "^5.8.3"
+    "@types/sql.js": "^1.4.11",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^5.3.3"
   }
 }
