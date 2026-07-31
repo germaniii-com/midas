@@ -1,0 +1,24 @@
+# Dependencies
+**/node_modules
+
+# Build output
+**/dist
+**/out
+**/release
+**/release-backend-deps
+
+# Data
+minio_data/
+postgres_data/
+sqlite_data/
+sqlite_data-api-remote/
+*.db
+*.db-shm
+*.db-wal
+
+# VCS / tooling
+.git
+.github
+.DS_Store
+*.log
+.env

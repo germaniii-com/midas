@@ -90,7 +90,7 @@
     }
   },
   "dependencies": {
-    "@midas/core": "1.0.0"
+    "@midas/core": "file:../core"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.6",
