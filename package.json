@@ -15,7 +15,7 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:desktop": "npm run dev --workspace=desktop",
     "build:core": "npm run build --workspace=@midas/core",
-    "build:backend": "npm run build --workspace=backend",
+    "build:backend": "npm run build:core && npm run build --workspace=backend",
     "build:desktop": "npm run build --workspace=desktop",
     "package:desktop": "npm run build:core && npm run build --workspace=backend && npm run build --workspace=frontend && npm run package --workspace=desktop",
     "package:desktop:dist": "npm run build:core && npm run build --workspace=backend && npm run build --workspace=frontend && npm run package:dist --workspace=desktop",

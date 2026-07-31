@@ -116,6 +116,9 @@ jobs:
       - name: Install project dependencies
         run: npm ci
 
+      - name: Build core
+        run: npm run build:core
+
       - name: Build backend
         run: npm run build --workspace=backend
 
