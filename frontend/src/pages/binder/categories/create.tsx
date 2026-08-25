@@ -23,7 +23,7 @@ export default function CreateCategoryPage() {
     try {
       await createCategory(id, { name: name.trim() });
       toastSuccess('Category created successfully');
-      navigate(`/binders/${id}/categories`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create category');
       toastError(message);

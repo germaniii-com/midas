@@ -40,7 +40,7 @@ export default function EditCategoryPage() {
     try {
       await updateCategory(id, categoryId, { name: name.trim() });
       toastSuccess('Category updated successfully');
-      navigate(`/binders/${id}/categories`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to update category');
       toastError(message);
@@ -57,7 +57,7 @@ export default function EditCategoryPage() {
     try {
       await deleteCategory(id, categoryId);
       toastSuccess('Category deleted successfully');
-      navigate(`/binders/${id}/categories`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to delete category');
       toastError(message);

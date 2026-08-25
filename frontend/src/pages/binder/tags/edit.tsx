@@ -42,7 +42,7 @@ export default function EditTagPage() {
     try {
       await updateTag(id, tagId, { name: name.trim(), color });
       toastSuccess('Tag updated successfully');
-      navigate(`/binders/${id}/tags`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to update tag');
       toastError(message);
@@ -59,7 +59,7 @@ export default function EditTagPage() {
     try {
       await deleteTag(id, tagId);
       toastSuccess('Tag deleted successfully');
-      navigate(`/binders/${id}/tags`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to delete tag');
       toastError(message);

@@ -40,7 +40,7 @@ export default function EditPayeePage() {
     try {
       await updatePayee(id, payeeId, { name: name.trim() });
       toastSuccess('Payee updated successfully');
-      navigate(`/binders/${id}/payees`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to update payee');
       toastError(message);
@@ -57,7 +57,7 @@ export default function EditPayeePage() {
     try {
       await deletePayee(id, payeeId);
       toastSuccess('Payee deleted successfully');
-      navigate(`/binders/${id}/payees`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to delete payee');
       toastError(message);

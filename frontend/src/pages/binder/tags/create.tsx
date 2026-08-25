@@ -24,7 +24,7 @@ export default function CreateTagPage() {
     try {
       await createTag(id, { name: name.trim(), color });
       toastSuccess('Tag created successfully');
-      navigate(`/binders/${id}/tags`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create tag');
       toastError(message);

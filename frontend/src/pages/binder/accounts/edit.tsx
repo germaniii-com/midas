@@ -75,7 +75,7 @@ export default function EditAccountPage() {
         categoryIds: Array.from(selectedCategoryIds),
       });
       toastSuccess('Account updated successfully');
-      navigate(transactionsPath);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to update account');
       toastError(message);
@@ -92,7 +92,7 @@ export default function EditAccountPage() {
     try {
       await deleteAccount(id, accountId);
       toastSuccess('Account deleted successfully');
-      navigate(`/binders/${id}/accounts`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to delete account');
       toastError(message);

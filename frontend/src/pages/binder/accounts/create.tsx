@@ -57,7 +57,7 @@ export default function CreateAccountPage() {
         categoryIds: Array.from(selectedCategoryIds),
       });
       toastSuccess('Account created successfully');
-      navigate(`/binders/${id}/accounts`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create account');
       toastError(message);

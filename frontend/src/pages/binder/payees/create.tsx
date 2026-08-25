@@ -23,7 +23,7 @@ export default function CreatePayeePage() {
     try {
       await createPayee(id, name.trim());
       toastSuccess('Payee created successfully');
-      navigate(`/binders/${id}/payees`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create payee');
       toastError(message);

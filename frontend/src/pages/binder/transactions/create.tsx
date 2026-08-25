@@ -148,11 +148,7 @@ export default function CreateTransactionPage() {
       }
 
       toastSuccess('Transaction created successfully');
-      if (backAccountId) {
-        navigate(`/binders/${id}/accounts/${backAccountId}/transactions`);
-      } else {
-        navigate(`/binders/${id}/transactions`);
-      }
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create transaction');
       toastError(message);

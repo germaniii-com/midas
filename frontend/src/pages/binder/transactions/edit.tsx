@@ -198,7 +198,7 @@ export default function EditTransactionPage() {
         tagIds: Array.from(selectedTagIds),
       });
       toastSuccess('Transaction updated successfully');
-      navigate(`/binders/${id}/transactions`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to update transaction');
       toastError(message);
@@ -215,7 +215,7 @@ export default function EditTransactionPage() {
     try {
       await deleteTransaction(id, transactionId);
       toastSuccess('Transaction deleted successfully');
-      navigate(`/binders/${id}/transactions`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to delete transaction');
       toastError(message);

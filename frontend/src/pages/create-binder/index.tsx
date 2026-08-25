@@ -34,7 +34,7 @@ export default function CreateBinder() {
         description: description.trim() || undefined,
       });
       toastSuccess('Binder created successfully');
-      navigate('/');
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create binder');
       toastError(message);

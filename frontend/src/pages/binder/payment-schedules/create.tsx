@@ -143,7 +143,7 @@ export default function CreatePaymentSchedulePage() {
         notifyType: notifyType as 'days' | 'weeks' | 'months',
       });
       toastSuccess('Payment schedule created successfully');
-      navigate(`/binders/${id}/payment-schedules`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to create payment schedule');
       toastError(message);

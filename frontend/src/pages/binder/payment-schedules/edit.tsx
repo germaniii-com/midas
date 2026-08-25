@@ -175,7 +175,7 @@ export default function EditPaymentSchedulePage() {
         notifyType: notifyType as 'days' | 'weeks' | 'months',
       });
       toastSuccess('Payment schedule updated successfully');
-      navigate(`/binders/${id}/payment-schedules`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to update payment schedule');
       toastError(message);
@@ -192,7 +192,7 @@ export default function EditPaymentSchedulePage() {
     try {
       await deactivatePaymentSchedule(id, scheduleId);
       toastSuccess('Payment schedule deactivated');
-      navigate(`/binders/${id}/payment-schedules`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to deactivate payment schedule');
       toastError(message);
@@ -208,7 +208,7 @@ export default function EditPaymentSchedulePage() {
     try {
       await deletePaymentSchedule(id, scheduleId);
       toastSuccess('Payment schedule deleted successfully');
-      navigate(`/binders/${id}/payment-schedules`);
+      window.history.back();
     } catch (err) {
       const message = getErrorMessage(err, 'Failed to delete payment schedule');
       toastError(message);
