@@ -15,6 +15,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 FROM nginx:alpine AS prod
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY public/env-config.js.template /usr/share/nginx/html/env-config.js.template
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 80
